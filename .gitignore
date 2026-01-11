@@ -1,0 +1,28 @@
+# Build outputs
+**/build/
+**/target/
+**/.gradle/
+**/.DS_Store
+
+# IDE
+**/.idea/
+**/.vscode/
+*.iml
+
+# Logs
+*.log
+
+# Terraform
+**/.terraform/
+**/.terraform.lock.hcl
+**/terraform.tfstate*
+
+# AWS
+**/.aws/
+
+# Docker
+**/Dockerfile.tmp
+docs/
+
+# Cache de build
+**/build-cache/

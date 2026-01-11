@@ -1,0 +1,40 @@
+# Variables de entrada para el módulo específico de franquicias
+
+variable "env" {
+  description = "Environment (dev, qa, prod)"
+  type        = string
+  validation {
+    condition     = contains(["dev", "qa", "prod"], var.env)
+    error_message = "Environment must be dev, qa, or prod."
+  }
+}
+
+variable "capacity" {
+  description = "Business capacity identifier"
+  type        = string
+  default     = "business"
+}
+
+variable "functionality" {
+  description = "Specific functionality name"
+  type        = string
+  default     = "franquicias"
+}
+
+variable "owner" {
+  description = "Team owner of the resources"
+  type        = string
+  default     = "platform-team"
+}
+
+variable "project" {
+  description = "Project identifier"
+  type        = string
+  default     = "franchise-api"
+}
+
+variable "tags" {
+  description = "Common tags for all resources"
+  type        = map(string)
+  default     = {}
+}

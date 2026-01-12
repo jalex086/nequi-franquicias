@@ -21,12 +21,6 @@ variable "env" {
   }
 }
 
-variable "container_image" {
-  description = "Docker container image"
-  type        = string
-  default     = "jalex086/nequi-franquicias:latest"
-}
-
 variable "capacity" {
   description = "Business capacity identifier"
   type        = string

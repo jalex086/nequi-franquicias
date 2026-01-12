@@ -287,9 +287,6 @@ resource "aws_security_group" "vpc_endpoint" {
   })
 }
 
-# Data sources
-data "aws_region" "current" {}
-
 # IAM Roles
 resource "aws_iam_role" "ecs_task_execution" {
   name = "${local.service_name}-ecs-task-execution"

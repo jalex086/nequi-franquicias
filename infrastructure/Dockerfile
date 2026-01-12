@@ -27,16 +27,16 @@ RUN ./gradlew bootJar --no-daemon \
     && java -Djarmode=layertools -jar build/libs/*.jar extract
 
 # Stage 2: Runtime
-FROM openjdk:25-jre-slim AS runtime
+FROM eclipse-temurin:21-jre-alpine AS runtime
 
 # Crear usuario no-root para seguridad
-RUN groupadd -r appuser && useradd -r -g appuser appuser
+RUN addgroup -g 1001 -S appuser && \
+    adduser -u 1001 -S appuser -G appuser
 
 # Instalar herramientas de monitoreo
-RUN apt-get update && apt-get install -y \
+RUN apk add --no-cache \
     curl \
-    dumb-init \
-    && rm -rf /var/lib/apt/lists/*
+    dumb-init
 
 # Configurar directorio de trabajo
 WORKDIR /app

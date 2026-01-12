@@ -5,20 +5,32 @@ spring:
     name: "FranquiciasAPI"
   devtools:
     add-properties: false
-  h2:
-    console:
-      enabled: true
-      path: "/h2"
   profiles:
     include: null
+
+aws:
+  region: us-east-1
+  dynamodb:
+    tables:
+      franchises: business-franquicias-${ENVIRONMENT:dev}
+      branches: business-sucursales-${ENVIRONMENT:dev}
+      products: business-productos-${ENVIRONMENT:dev}
+
 management:
   endpoints:
     web:
       exposure:
-        include: "health,prometheus"
+        include: "health,prometheus,info"
   endpoint:
     health:
       probes:
         enabled: true
+      show-details: always
+
 cors:
   allowed-origins: "http://localhost:4200,http://localhost:8080"
+
+logging:
+  level:
+    co.com.bancolombia: DEBUG
+    software.amazon.awssdk: INFO

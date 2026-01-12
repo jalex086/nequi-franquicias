@@ -1,5 +1,11 @@
 # Variables de entrada para el módulo específico de franquicias
 
+variable "aws_region" {
+  description = "AWS region"
+  type        = string
+  default     = "us-east-1"
+}
+
 variable "env" {
   description = "Environment (dev, qa, prod)"
   type        = string
@@ -7,6 +13,12 @@ variable "env" {
     condition     = contains(["dev", "qa", "prod"], var.env)
     error_message = "Environment must be dev, qa, or prod."
   }
+}
+
+variable "container_image" {
+  description = "Docker container image"
+  type        = string
+  default     = "jalex086/nequi-franquicias:latest"
 }
 
 variable "capacity" {

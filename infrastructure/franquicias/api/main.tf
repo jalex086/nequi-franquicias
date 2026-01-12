@@ -115,7 +115,7 @@ resource "aws_ecs_task_definition" "app" {
           name  = "ENVIRONMENT"
           value = var.env
         }
-        },
+      ]
         {
           name  = "AWS_DYNAMODB_TABLES_PRODUCTS"
           value = data.aws_dynamodb_table.productos.name

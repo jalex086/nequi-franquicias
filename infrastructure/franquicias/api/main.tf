@@ -249,6 +249,47 @@ resource "aws_cloudwatch_log_group" "ecs_cluster" {
 # Container image will be pulled from Docker Hub
 # No ECR repository needed
 
+# VPC Endpoint for CloudWatch Logs (required for private subnets)
+resource "aws_vpc_endpoint" "logs" {
+  vpc_id              = data.aws_vpc.default.id
+  service_name        = "com.amazonaws.${data.aws_region.current.name}.logs"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = data.aws_subnets.private.ids
+  security_group_ids  = [aws_security_group.vpc_endpoint.id]
+  private_dns_enabled = true
+
+  tags = merge(var.tags, {
+    Name = "${local.service_name}-logs-endpoint"
+  })
+}
+
+# Security Group for VPC Endpoint
+resource "aws_security_group" "vpc_endpoint" {
+  name_prefix = "${local.service_name}-vpc-endpoint"
+  vpc_id      = data.aws_vpc.default.id
+
+  ingress {
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    security_groups = [aws_security_group.ecs_service.id]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = merge(var.tags, {
+    Name = "${local.service_name}-vpc-endpoint-sg"
+  })
+}
+
+# Data sources
+data "aws_region" "current" {}
+
 # IAM Roles
 resource "aws_iam_role" "ecs_task_execution" {
   name = "${local.service_name}-ecs-task-execution"

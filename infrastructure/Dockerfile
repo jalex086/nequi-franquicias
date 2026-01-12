@@ -2,12 +2,11 @@
 # Optimizado para CI/CD y producción
 
 # Stage 1: Build
-FROM openjdk:25-jdk-slim AS builder
+FROM eclipse-temurin:25-jdk-alpine AS builder
 
 # Instalar herramientas necesarias
-RUN apt-get update && apt-get install -y \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache \
+    curl
 
 # Configurar directorio de trabajo
 WORKDIR /app
@@ -27,7 +26,7 @@ RUN ./gradlew bootJar --no-daemon \
     && java -Djarmode=layertools -jar build/libs/*.jar extract
 
 # Stage 2: Runtime
-FROM eclipse-temurin:21-jre-alpine AS runtime
+FROM eclipse-temurin:25-jre-alpine AS runtime
 
 # Crear usuario no-root para seguridad
 RUN addgroup -g 1001 -S appuser && \

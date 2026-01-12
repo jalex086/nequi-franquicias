@@ -25,6 +25,17 @@ data "aws_subnets" "private" {
   }
 }
 
+data "aws_subnets" "public" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.main.id]
+  }
+  filter {
+    name   = "map-public-ip-on-launch"
+    values = ["true"]
+  }
+}
+
 data "aws_region" "current" {}
 
 # ECS Cluster
@@ -52,9 +63,9 @@ resource "aws_ecs_service" "app" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets          = data.aws_subnets.private.ids
+    subnets          = data.aws_subnets.public.ids
     security_groups  = [aws_security_group.ecs_service.id]
-    assign_public_ip = false
+    assign_public_ip = true
   }
 
   load_balancer {
@@ -142,7 +153,7 @@ resource "aws_lb" "app" {
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb.id]
-  subnets            = data.aws_subnets.private.ids
+  subnets            = data.aws_subnets.public.ids
 
   enable_deletion_protection = var.env == "prod" ? true : false
 

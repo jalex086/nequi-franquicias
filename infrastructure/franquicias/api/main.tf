@@ -246,17 +246,8 @@ resource "aws_cloudwatch_log_group" "ecs_cluster" {
   tags = var.tags
 }
 
-# ECR Repository
-resource "aws_ecr_repository" "app" {
-  name                 = local.ecr_name
-  image_tag_mutability = "MUTABLE"
-
-  image_scanning_configuration {
-    scan_on_push = true
-  }
-
-  tags = var.tags
-}
+# Container image will be pulled from Docker Hub
+# No ECR repository needed
 
 # IAM Roles
 resource "aws_iam_role" "ecs_task_execution" {

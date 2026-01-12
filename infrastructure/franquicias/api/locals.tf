@@ -12,7 +12,7 @@ locals {
   ecr_name          = "${var.capacity}-${var.functionality}"
 
   # Container configuration
-  container_image = "${aws_ecr_repository.app.repository_url}:latest"
+  container_image = "${var.container_image}:${var.env}"
 
   # Resource sizing by environment
   cpu = var.env == "prod" ? 1024 : 512

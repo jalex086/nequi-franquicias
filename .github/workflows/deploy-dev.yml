@@ -60,7 +60,7 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          docker build -t nequi-franquicias-api:dev -f infrastructure/Dockerfile api/
+          docker build -t nequi-franquicias-api:dev -f api/deployment/Dockerfile api/applications/app-service/build/libs/
           # Push to ECR (configurar según necesidad)
 
       - name: Deploy to ECS DEV

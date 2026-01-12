@@ -3,7 +3,7 @@
 variable "container_image" {
   description = "Docker image for the application"
   type        = string
-  default     = "jalex086/nequi-franquicias-api"
+  default     = "jalex086/nequi-franquicias"
 }
 
 variable "aws_region" {

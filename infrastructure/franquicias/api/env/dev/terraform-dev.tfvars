@@ -6,7 +6,7 @@ owner         = "platform-team"
 project       = "franchise-api"
 
 # Container configuration
-container_image = "jalex086/nequi-franquicias-api"
+container_image = "jalex086/nequi-franquicias"
 
 # Configuraciones específicas para dev
 enable_auto_scaling         = true

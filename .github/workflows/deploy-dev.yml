@@ -60,8 +60,9 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          docker build -t nequi-franquicias-api:dev -f api/deployment/Dockerfile api/applications/app-service/build/libs/
-          # Push to ECR (configurar según necesidad)
+          docker build -t jalex086/nequi-franquicias:dev -f api/deployment/Dockerfile api/applications/app-service/build/libs/
+          echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u jalex086 --password-stdin
+          docker push jalex086/nequi-franquicias:dev
 
       - name: Deploy to ECS DEV
         run: |

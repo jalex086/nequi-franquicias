@@ -4,7 +4,7 @@
 # Tabla principal de franquicias
 resource "aws_dynamodb_table" "franquicias" {
   name           = "business-franquicias-${var.env}"
-  billing_mode   = "ON_DEMAND"
+  billing_mode   = "PAY_PER_REQUEST"
   hash_key       = "PK"
   range_key      = "SK"
 
@@ -55,7 +55,7 @@ resource "aws_dynamodb_table" "franquicias" {
 # Tabla de sucursales (modelo híbrido)
 resource "aws_dynamodb_table" "sucursales" {
   name           = "business-sucursales-${var.env}"
-  billing_mode   = "ON_DEMAND"
+  billing_mode   = "PAY_PER_REQUEST"
   hash_key       = "PK"
   range_key      = "SK"
 
@@ -106,7 +106,7 @@ resource "aws_dynamodb_table" "sucursales" {
 # Tabla de productos (para sucursales grandes)
 resource "aws_dynamodb_table" "productos" {
   name           = "business-productos-${var.env}"
-  billing_mode   = "ON_DEMAND"
+  billing_mode   = "PAY_PER_REQUEST"
   hash_key       = "PK"
   range_key      = "SK"
 

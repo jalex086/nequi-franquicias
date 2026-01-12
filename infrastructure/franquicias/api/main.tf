@@ -251,7 +251,7 @@ resource "aws_cloudwatch_log_group" "ecs_cluster" {
 
 # VPC Endpoint for CloudWatch Logs (required for private subnets)
 resource "aws_vpc_endpoint" "logs" {
-  vpc_id              = data.aws_vpc.default.id
+  vpc_id              = data.aws_vpc.main.id
   service_name        = "com.amazonaws.${data.aws_region.current.name}.logs"
   vpc_endpoint_type   = "Interface"
   subnet_ids          = data.aws_subnets.private.ids
@@ -266,7 +266,7 @@ resource "aws_vpc_endpoint" "logs" {
 # Security Group for VPC Endpoint
 resource "aws_security_group" "vpc_endpoint" {
   name_prefix = "${local.service_name}-vpc-endpoint"
-  vpc_id      = data.aws_vpc.default.id
+  vpc_id      = data.aws_vpc.main.id
 
   ingress {
     from_port       = 443

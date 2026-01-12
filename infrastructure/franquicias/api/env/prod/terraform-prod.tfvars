@@ -5,6 +5,9 @@ functionality = "franquicias"
 owner         = "platform-team"
 project       = "franchise-api"
 
+# Container configuration
+container_image = "jalex086/nequi-franquicias-api"
+
 # Configuraciones específicas para prod
 enable_auto_scaling         = true
 log_retention_days         = 30

@@ -112,15 +112,12 @@ resource "aws_ecs_task_definition" "app" {
           value = data.aws_region.current.name
         },
         {
-          name  = "DYNAMODB_FRANQUICIAS_TABLE"
-          value = data.aws_dynamodb_table.franquicias.name
+          name  = "ENVIRONMENT"
+          value = var.env
+        }
         },
         {
-          name  = "DYNAMODB_SUCURSALES_TABLE"
-          value = data.aws_dynamodb_table.sucursales.name
-        },
-        {
-          name  = "DYNAMODB_PRODUCTOS_TABLE"
+          name  = "AWS_DYNAMODB_TABLES_PRODUCTS"
           value = data.aws_dynamodb_table.productos.name
         }
       ]

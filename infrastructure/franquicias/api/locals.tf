@@ -15,8 +15,8 @@ locals {
   container_image = "${var.container_image}:${var.env}"
 
   # Resource sizing by environment
-  cpu = var.env == "prod" ? 1024 : 512
-  memory = var.env == "prod" ? 2048 : 1024
+  cpu = var.env == "prod" ? 1024 : 1024
+  memory = var.env == "prod" ? 2048 : 2048
 
   # Scaling configuration
   desired_count = var.env == "prod" ? 2 : 1

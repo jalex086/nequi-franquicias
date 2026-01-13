@@ -252,57 +252,16 @@ resource "aws_cloudwatch_log_group" "ecs_cluster" {
 # Container image will be pulled from Docker Hub
 # No ECR repository needed
 
-# VPC Endpoint for CloudWatch Logs (required for private subnets)
-# Solo crear en DEV para evitar conflictos DNS
-resource "aws_vpc_endpoint" "logs" {
+# VPC Endpoint for CloudWatch Logs - usar el existente
+data "aws_vpc_endpoint" "logs" {
   count = var.env == "dev" ? 1 : 0
   
-  vpc_id              = data.aws_vpc.main.id
-  service_name        = "com.amazonaws.${data.aws_region.current.name}.logs"
-  vpc_endpoint_type   = "Interface"
-  subnet_ids          = data.aws_subnets.private.ids
-  security_group_ids  = var.env == "dev" ? [aws_security_group.vpc_endpoint[0].id] : []
-  private_dns_enabled = true
-
-  lifecycle {
-    create_before_destroy = true
-  }
-
-  tags = merge(var.tags, {
-    Name = "${local.service_name}-logs-endpoint"
-  })
+  vpc_id       = data.aws_vpc.main.id
+  service_name = "com.amazonaws.${data.aws_region.current.name}.logs"
 }
 
-# Security Group for VPC Endpoint
-# Solo crear en DEV para evitar conflictos
-resource "aws_security_group" "vpc_endpoint" {
-  count = var.env == "dev" ? 1 : 0
-  
-  name_prefix = "${local.service_name}-vpc-endpoint"
-  vpc_id      = data.aws_vpc.main.id
-
-  ingress {
-    from_port       = 443
-    to_port         = 443
-    protocol        = "tcp"
-    security_groups = [aws_security_group.ecs_service.id]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  lifecycle {
-    create_before_destroy = true
-  }
-
-  tags = merge(var.tags, {
-    Name = "${local.service_name}-vpc-endpoint-sg"
-  })
-}
+# Security Group for VPC Endpoint - no necesario, usar el existente
+# Deshabilitado porque usamos data source para VPC endpoint existente
 
 # IAM Roles
 resource "aws_iam_role" "ecs_task_execution" {

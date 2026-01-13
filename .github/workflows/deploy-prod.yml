@@ -68,13 +68,51 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          docker build -t nequi-franquicias-api:prod -f infrastructure/Dockerfile api/
-          # Push to ECR
+          # Crear tag con formato Nequi: YYYYMMDD.run_number
+          IMAGE_TAG="$(date +%Y%m%d).${{ github.run_number }}"
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+          
+          # Build y push con tag único
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/nequi-franquicias:$IMAGE_TAG -f api/deployment/Dockerfile api/applications/app-service/build/libs/
+          echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/nequi-franquicias:$IMAGE_TAG
+          
+          # También tagear como 'latest-prod' para referencia
+          docker tag ${{ secrets.DOCKERHUB_USERNAME }}/nequi-franquicias:$IMAGE_TAG ${{ secrets.DOCKERHUB_USERNAME }}/nequi-franquicias:latest-prod
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/nequi-franquicias:latest-prod
+
+      - name: Configure AWS credentials for ECS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Deploy to ECS PRODUCTION
         run: |
-          # Actualizar servicio ECS
-          echo "Deploying to PRODUCTION environment"
+          # Obtener task definition actual
+          TASK_DEF=$(aws ecs describe-task-definition --task-definition business-franquicias-prod --region ${{ env.AWS_REGION }})
+          
+          # Crear nueva task definition con la nueva imagen
+          NEW_TASK_DEF=$(echo $TASK_DEF | jq --arg IMAGE "${{ secrets.DOCKERHUB_USERNAME }}/nequi-franquicias:$IMAGE_TAG" '.taskDefinition | .containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn) | del(.revision) | del(.status) | del(.requiresAttributes) | del(.placementConstraints) | del(.compatibilities) | del(.registeredAt) | del(.registeredBy)')
+          
+          # Registrar nueva task definition
+          aws ecs register-task-definition --region ${{ env.AWS_REGION }} --cli-input-json "$NEW_TASK_DEF"
+          
+          # Actualizar servicio con nueva task definition
+          aws ecs update-service \
+            --cluster business-cluster-prod \
+            --service business-franquicias-prod \
+            --task-definition business-franquicias-prod \
+            --region ${{ env.AWS_REGION }}
+          
+          # Esperar que el deployment se complete
+          aws ecs wait services-stable \
+            --cluster business-cluster-prod \
+            --services business-franquicias-prod \
+            --region ${{ env.AWS_REGION }}
+          
+          echo "✅ Deployment to PRODUCTION completed successfully with image tag: $IMAGE_TAG"
 
       - name: Health Check
         run: |

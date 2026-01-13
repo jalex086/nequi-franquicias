@@ -12,11 +12,11 @@ locals {
   ecr_name          = "${var.capacity}-${var.functionality}"
 
   # Container configuration
-  container_image = "${aws_ecr_repository.app.repository_url}:latest"
+  container_image = "${var.container_image}:${var.env}"
 
   # Resource sizing by environment
-  cpu = var.env == "prod" ? 1024 : 512
-  memory = var.env == "prod" ? 2048 : 1024
+  cpu = var.env == "prod" ? 1024 : 1024
+  memory = var.env == "prod" ? 2048 : 2048
 
   # Scaling configuration
   desired_count = var.env == "prod" ? 2 : 1

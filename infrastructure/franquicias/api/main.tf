@@ -25,6 +25,17 @@ data "aws_subnets" "private" {
   }
 }
 
+data "aws_subnets" "public" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.main.id]
+  }
+  filter {
+    name   = "map-public-ip-on-launch"
+    values = ["true"]
+  }
+}
+
 data "aws_region" "current" {}
 
 # ECS Cluster
@@ -52,20 +63,15 @@ resource "aws_ecs_service" "app" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets          = data.aws_subnets.private.ids
+    subnets          = data.aws_subnets.public.ids
     security_groups  = [aws_security_group.ecs_service.id]
-    assign_public_ip = false
+    assign_public_ip = true
   }
 
   load_balancer {
     target_group_arn = aws_lb_target_group.app.arn
     container_name   = local.container_name
     container_port   = 8080
-  }
-
-  deployment_configuration {
-    maximum_percent         = 200
-    minimum_healthy_percent = 100
   }
 
   depends_on = [aws_lb_listener.app]
@@ -106,16 +112,8 @@ resource "aws_ecs_task_definition" "app" {
           value = data.aws_region.current.name
         },
         {
-          name  = "DYNAMODB_FRANQUICIAS_TABLE"
-          value = data.aws_dynamodb_table.franquicias.name
-        },
-        {
-          name  = "DYNAMODB_SUCURSALES_TABLE"
-          value = data.aws_dynamodb_table.sucursales.name
-        },
-        {
-          name  = "DYNAMODB_PRODUCTOS_TABLE"
-          value = data.aws_dynamodb_table.productos.name
+          name  = "ENVIRONMENT"
+          value = var.env
         }
       ]
 
@@ -129,11 +127,11 @@ resource "aws_ecs_task_definition" "app" {
       }
 
       healthCheck = {
-        command     = ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
-        interval    = 30
-        timeout     = 5
-        retries     = 3
-        startPeriod = 60
+        command     = ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1"]
+        interval    = 60
+        timeout     = 10
+        retries     = 5
+        startPeriod = 120
       }
     }
   ])
@@ -147,7 +145,7 @@ resource "aws_lb" "app" {
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb.id]
-  subnets            = data.aws_subnets.private.ids
+  subnets            = data.aws_subnets.public.ids
 
   enable_deletion_protection = var.env == "prod" ? true : false
 
@@ -164,13 +162,13 @@ resource "aws_lb_target_group" "app" {
   health_check {
     enabled             = true
     healthy_threshold   = 2
-    interval            = 30
+    interval            = 60
     matcher             = "200"
     path                = "/actuator/health"
     port                = "traffic-port"
     protocol            = "HTTP"
-    timeout             = 5
-    unhealthy_threshold = 2
+    timeout             = 10
+    unhealthy_threshold = 3
   }
 
   tags = var.tags
@@ -251,16 +249,45 @@ resource "aws_cloudwatch_log_group" "ecs_cluster" {
   tags = var.tags
 }
 
-# ECR Repository
-resource "aws_ecr_repository" "app" {
-  name                 = local.ecr_name
-  image_tag_mutability = "MUTABLE"
+# Container image will be pulled from Docker Hub
+# No ECR repository needed
 
-  image_scanning_configuration {
-    scan_on_push = true
+# VPC Endpoint for CloudWatch Logs (required for private subnets)
+resource "aws_vpc_endpoint" "logs" {
+  vpc_id              = data.aws_vpc.main.id
+  service_name        = "com.amazonaws.${data.aws_region.current.name}.logs"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = data.aws_subnets.private.ids
+  security_group_ids  = [aws_security_group.vpc_endpoint.id]
+  private_dns_enabled = true
+
+  tags = merge(var.tags, {
+    Name = "${local.service_name}-logs-endpoint"
+  })
+}
+
+# Security Group for VPC Endpoint
+resource "aws_security_group" "vpc_endpoint" {
+  name_prefix = "${local.service_name}-vpc-endpoint"
+  vpc_id      = data.aws_vpc.main.id
+
+  ingress {
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    security_groups = [aws_security_group.ecs_service.id]
   }
 
-  tags = var.tags
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = merge(var.tags, {
+    Name = "${local.service_name}-vpc-endpoint-sg"
+  })
 }
 
 # IAM Roles

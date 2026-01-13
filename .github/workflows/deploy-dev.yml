@@ -3,6 +3,7 @@ name: Deploy to DEV
 on:
   push:
     branches: [develop]
+  workflow_dispatch:
 
 env:
   AWS_REGION: us-east-1
@@ -60,10 +61,48 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          docker build -t nequi-franquicias-api:dev -f infrastructure/Dockerfile api/
-          # Push to ECR (configurar según necesidad)
+          # Crear tag con formato Nequi: YYYYMMDD.run_number
+          IMAGE_TAG="$(date +%Y%m%d).${{ github.run_number }}"
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+          
+          # Build y push con tag único
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/nequi-franquicias:$IMAGE_TAG -f api/deployment/Dockerfile api/applications/app-service/build/libs/
+          echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/nequi-franquicias:$IMAGE_TAG
+          
+          # También tagear como 'latest-dev' para referencia
+          docker tag ${{ secrets.DOCKERHUB_USERNAME }}/nequi-franquicias:$IMAGE_TAG ${{ secrets.DOCKERHUB_USERNAME }}/nequi-franquicias:latest-dev
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/nequi-franquicias:latest-dev
+
+      - name: Configure AWS credentials for ECS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - name: Deploy to ECS DEV
         run: |
-          # Actualizar servicio ECS
-          echo "Deploying to DEV environment"
+          # Obtener task definition actual
+          TASK_DEF=$(aws ecs describe-task-definition --task-definition business-franquicias-dev --region ${{ env.AWS_REGION }})
+          
+          # Crear nueva task definition con la nueva imagen
+          NEW_TASK_DEF=$(echo $TASK_DEF | jq --arg IMAGE "${{ secrets.DOCKERHUB_USERNAME }}/nequi-franquicias:$IMAGE_TAG" '.taskDefinition | .containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn) | del(.revision) | del(.status) | del(.requiresAttributes) | del(.placementConstraints) | del(.compatibilities) | del(.registeredAt) | del(.registeredBy)')
+          
+          # Registrar nueva task definition
+          aws ecs register-task-definition --region ${{ env.AWS_REGION }} --cli-input-json "$NEW_TASK_DEF"
+          
+          # Actualizar servicio con nueva task definition
+          aws ecs update-service \
+            --cluster business-cluster-dev \
+            --service business-franquicias-dev \
+            --task-definition business-franquicias-dev \
+            --region ${{ env.AWS_REGION }}
+          
+          # Esperar que el deployment se complete
+          aws ecs wait services-stable \
+            --cluster business-cluster-dev \
+            --services business-franquicias-dev \
+            --region ${{ env.AWS_REGION }}
+          
+          echo "✅ Deployment to DEV completed successfully with image tag: $IMAGE_TAG"

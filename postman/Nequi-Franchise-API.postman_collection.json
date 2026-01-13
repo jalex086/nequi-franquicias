@@ -1,0 +1,377 @@
+{
+	"info": {
+		"_postman_id": "franchise-api-collection",
+		"name": "Nequi Franchise Management API",
+		"description": "Complete API collection for franchise, branch, and product management system",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Health Check",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/actuator/health",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"actuator",
+						"health"
+					]
+				}
+			}
+		},
+		{
+			"name": "Franchises",
+			"item": [
+				{
+					"name": "Create Franchise",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"McDonald's Colombia\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/franchises",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"franchises"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get All Franchises",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/franchises",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"franchises"
+							]
+						}
+					}
+				},
+				{
+					"name": "Update Franchise Name",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"McDonald's Colombia - Updated\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/franchises/{{franchise_id}}/name",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"franchises",
+								"{{franchise_id}}",
+								"name"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Branches",
+			"item": [
+				{
+					"name": "Create Branch",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Sucursal Centro Comercial Andino\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/franchises/{{franchise_id}}/branches",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"franchises",
+								"{{franchise_id}}",
+								"branches"
+							]
+						}
+					}
+				},
+				{
+					"name": "Update Branch Name",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Sucursal Zona Rosa - Updated\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/branches/{{branch_id}}/name",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"branches",
+								"{{branch_id}}",
+								"name"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Products",
+			"item": [
+				{
+					"name": "Create Product",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Big Mac\",\n  \"stock\": 150\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/franchises/{{franchise_id}}/branches/{{branch_id}}/products",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"franchises",
+								"{{franchise_id}}",
+								"branches",
+								"{{branch_id}}",
+								"products"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Products by Branch",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/branches/{{branch_id}}/products",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"branches",
+								"{{branch_id}}",
+								"products"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Product by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/products/{{product_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"products",
+								"{{product_id}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "Delete Product",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/products/{{product_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"products",
+								"{{product_id}}"
+							]
+						}
+					}
+				},
+				{
+					"name": "Update Product Name",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Big Mac Deluxe\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/products/{{product_id}}/name",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"products",
+								"{{product_id}}",
+								"name"
+							]
+						}
+					}
+				},
+				{
+					"name": "Update Product Stock",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"stock\": 250\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/products/{{product_id}}/stock",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"products",
+								"{{product_id}}",
+								"stock"
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "Analytics",
+			"item": [
+				{
+					"name": "Get Top Stock Products by Franchise",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/franchises/{{franchise_id}}/products/top-stock",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"franchises",
+								"{{franchise_id}}",
+								"products",
+								"top-stock"
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Top Stock Product by Branch",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/franchises/{{franchise_id}}/branches/top-stock-products",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"franchises",
+								"{{franchise_id}}",
+								"branches",
+								"top-stock-products"
+							]
+						}
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8080",
+			"type": "string"
+		},
+		{
+			"key": "franchise_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "branch_id",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "product_id",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

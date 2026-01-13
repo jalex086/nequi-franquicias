@@ -127,7 +127,7 @@ resource "aws_ecs_task_definition" "app" {
       }
 
       healthCheck = {
-        command     = ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+        command     = ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1"]
         interval    = 60
         timeout     = 10
         retries     = 5

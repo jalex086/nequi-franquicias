@@ -10,8 +10,10 @@ import co.com.bancolombia.usecase.franchise.GetAllFranchisesUseCase;
 import co.com.bancolombia.usecase.franchise.UpdateFranchiseNameUseCase;
 import co.com.bancolombia.usecase.product.CreateProductUseCase;
 import co.com.bancolombia.usecase.product.DeleteProductUseCase;
+import co.com.bancolombia.usecase.product.GetProductByIdUseCase;
 import co.com.bancolombia.usecase.product.GetProductsByBranchUseCase;
 import co.com.bancolombia.usecase.product.GetTopStockProductByBranchUseCase;
+import co.com.bancolombia.usecase.product.GetTopStockProductByBranchWithBranchNameUseCase;
 import co.com.bancolombia.usecase.product.GetTopStockProductsUseCase;
 import co.com.bancolombia.usecase.product.UpdateProductNameUseCase;
 import co.com.bancolombia.usecase.product.UpdateProductStockUseCase;
@@ -67,13 +69,25 @@ public class UseCasesConfig {
     }
     
     @Bean
+    public GetTopStockProductByBranchWithBranchNameUseCase getTopStockProductByBranchWithBranchNameUseCase(
+            GetTopStockProductByBranchUseCase getTopStockProductByBranchUseCase,
+            BranchRepository branchRepository) {
+        return new GetTopStockProductByBranchWithBranchNameUseCase(getTopStockProductByBranchUseCase, branchRepository);
+    }
+    
+    @Bean
     public GetTopStockProductsUseCase getTopStockProductsUseCase(ProductRepository repository) {
         return new GetTopStockProductsUseCase(repository);
     }
     
     @Bean
-    public GetProductsByBranchUseCase getProductsByBranchUseCase(ProductRepository repository) {
-        return new GetProductsByBranchUseCase(repository);
+    public GetProductsByBranchUseCase getProductsByBranchUseCase(ProductRepository productRepository, BranchRepository branchRepository) {
+        return new GetProductsByBranchUseCase(productRepository, branchRepository);
+    }
+    
+    @Bean
+    public GetProductByIdUseCase getProductByIdUseCase(ProductRepository repository) {
+        return new GetProductByIdUseCase(repository);
     }
     
     @Bean

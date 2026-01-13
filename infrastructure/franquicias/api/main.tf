@@ -243,6 +243,12 @@ data "aws_security_group" "vpc_endpoint" {
     name   = "tag:Name"
     values = ["${local.service_name}-vpc-endpoint-sg"]
   }
+  
+  filter {
+    name   = "tag:Environment"
+    values = [var.env]
+  }
+  
   vpc_id = data.aws_vpc.main.id
 }
 

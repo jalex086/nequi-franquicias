@@ -261,8 +261,6 @@ resource "aws_vpc_endpoint" "logs" {
   security_group_ids  = [aws_security_group.vpc_endpoint.id]
   private_dns_enabled = true
 
-  depends_on = [aws_security_group.vpc_endpoint]
-
   tags = merge(var.tags, {
     Name = "${local.service_name}-logs-endpoint"
   })
@@ -285,6 +283,10 @@ resource "aws_security_group" "vpc_endpoint" {
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 
   tags = merge(var.tags, {

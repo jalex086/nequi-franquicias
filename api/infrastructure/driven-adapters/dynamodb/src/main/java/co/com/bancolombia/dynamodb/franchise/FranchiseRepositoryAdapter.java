@@ -17,6 +17,9 @@ import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 @Slf4j
 public class FranchiseRepositoryAdapter implements FranchiseRepository {
     
+    private static final String FRANCHISE_PREFIX = "FRANCHISE#";
+    private static final String METADATA_SK = "METADATA";
+    
     private final DynamoDbEnhancedAsyncClient dynamoClient;
     private final DynamoDBProperties properties;
     private DynamoDbAsyncTable<FranchiseEntity> table;
@@ -41,7 +44,7 @@ public class FranchiseRepositoryAdapter implements FranchiseRepository {
     
     @Override
     public Mono<Franchise> findById(String id) {
-        return Mono.fromFuture(getTable().getItem(r -> r.key(k -> k.partitionValue(id))))
+        return Mono.fromFuture(getTable().getItem(r -> r.key(k -> k.partitionValue(FRANCHISE_PREFIX + id).sortValue(METADATA_SK))))
                 .doOnSuccess(result -> log.debug("Franchise found: {}", id))
                 .doOnError(error -> log.error("Error finding franchise: {}", id, error))
                 .onErrorMap(throwable -> new RuntimeException("Error finding franchise", throwable))
@@ -59,7 +62,7 @@ public class FranchiseRepositoryAdapter implements FranchiseRepository {
     
     @Override
     public Mono<Void> deleteById(String id) {
-        return Mono.fromFuture(getTable().deleteItem(r -> r.key(k -> k.partitionValue(id))))
+        return Mono.fromFuture(getTable().deleteItem(r -> r.key(k -> k.partitionValue(FRANCHISE_PREFIX + id).sortValue(METADATA_SK))))
                 .doOnSuccess(result -> log.debug("Franchise deleted: {}", id))
                 .doOnError(error -> log.error("Error deleting franchise: {}", id, error))
                 .onErrorMap(throwable -> new RuntimeException("Error deleting franchise", throwable))
@@ -67,12 +70,19 @@ public class FranchiseRepositoryAdapter implements FranchiseRepository {
     }
     
     private FranchiseEntity toEntity(Franchise franchise) {
-        return FranchiseEntity.builder()
+        FranchiseEntity entity = FranchiseEntity.builder()
+                .PK(FRANCHISE_PREFIX + franchise.getId())
+                .SK(METADATA_SK)
                 .id(franchise.getId())
                 .name(franchise.getName())
                 .createdAt(franchise.getCreatedAt())
                 .updatedAt(franchise.getUpdatedAt())
                 .build();
+        
+        // Debug logs
+        log.debug("Creating entity - PK: {}, SK: {}, id: {}", entity.getPK(), entity.getSK(), entity.getId());
+        
+        return entity;
     }
     
     private Franchise toDomain(FranchiseEntity entity) {

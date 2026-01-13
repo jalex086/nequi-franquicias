@@ -4,6 +4,11 @@
 API REST reactiva para la gestión de franquicias, sucursales y productos. Implementada con Clean Architecture, Spring WebFlux y DynamoDB.
 
 ## Arquitectura
+
+### Vista de Componentes
+![Arquitectura de Componentes](../docs/c3_componentes_franquicias.png)
+
+### Descripción
 - **Framework:** Spring Boot 3 con WebFlux (Reactivo)
 - **Patrón:** Clean Architecture
 - **Base de Datos:** DynamoDB con GSI optimizado

@@ -237,15 +237,58 @@ resource "aws_security_group" "ecs_service" {
   })
 }
 
-# Security Group rule para VPC endpoint de CloudWatch Logs
-# Usar el ID específico del security group que ya está configurado
-resource "aws_security_group_rule" "vpc_endpoint_from_ecs" {
-  type                     = "ingress"
-  from_port                = 443
-  to_port                  = 443
-  protocol                 = "tcp"
-  source_security_group_id = aws_security_group.ecs_service.id
-  security_group_id        = "sg-0f607f424f50df554"  # VPC endpoint SG que ya funciona
+# VPC Endpoint para CloudWatch Logs
+resource "aws_vpc_endpoint" "logs" {
+  vpc_id              = data.aws_vpc.main.id
+  service_name        = "com.amazonaws.${data.aws_region.current.name}.logs"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = data.aws_subnets.public.ids
+  security_group_ids  = [aws_security_group.vpc_endpoint.id]
+  private_dns_enabled = true
+
+  policy = jsonencode({
+    Statement = [
+      {
+        Action    = "*"
+        Effect    = "Allow"
+        Principal = "*"
+        Resource  = "*"
+      }
+    ]
+  })
+
+  tags = merge(local.common_tags, {
+    Name = "${local.service_name}-logs-endpoint"
+  })
+}
+
+# Security Group para VPC Endpoint
+resource "aws_security_group" "vpc_endpoint" {
+  name_prefix = "${local.service_name}-vpc-endpoint-"
+  vpc_id      = data.aws_vpc.main.id
+
+  ingress {
+    description     = "HTTPS from ECS"
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    security_groups = [aws_security_group.ecs_service.id]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.service_name}-vpc-endpoint-sg"
+  })
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 # CloudWatch Log Groups - uniformes

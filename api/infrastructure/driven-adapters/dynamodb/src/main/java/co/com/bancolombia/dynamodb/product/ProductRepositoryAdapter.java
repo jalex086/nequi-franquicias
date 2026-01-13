@@ -65,7 +65,6 @@ public class ProductRepositoryAdapter implements ProductRepository {
     
     @Override
     public Mono<Product> findById(String id) {
-        // Primero buscar en productos SEPARATED
         return Mono.fromFuture(basicDynamoClient.getItem(GetItemRequest.builder()
                 .tableName(properties.getTables().getProducts())
                 .key(Map.of(
@@ -150,19 +149,6 @@ public class ProductRepositoryAdapter implements ProductRepository {
                 ))
                 .build()))
                 .then();
-    }
-    
-    private ProductEntity toEntity(Product product) {
-        return ProductEntity.builder()
-                .id(product.getId())
-                .franchiseId(product.getFranchiseId())
-                .branchId(product.getBranchId())
-                .name(product.getName())
-                .stock(product.getStock())
-                .createdAt(product.getCreatedAt())
-                .updatedAt(product.getUpdatedAt())
-                .GSI1PK(product.getBranchId()) // Para búsqueda por sucursal
-                .build();
     }
     
     private Product toDomain(ProductEntity entity) {

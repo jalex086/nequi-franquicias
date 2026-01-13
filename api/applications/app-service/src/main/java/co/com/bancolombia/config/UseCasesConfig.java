@@ -76,8 +76,8 @@ public class UseCasesConfig {
     }
     
     @Bean
-    public GetTopStockProductsUseCase getTopStockProductsUseCase(ProductRepository repository) {
-        return new GetTopStockProductsUseCase(repository);
+    public GetTopStockProductsUseCase getTopStockProductsUseCase(ProductRepository productRepository, BranchRepository branchRepository) {
+        return new GetTopStockProductsUseCase(productRepository, branchRepository);
     }
     
     @Bean

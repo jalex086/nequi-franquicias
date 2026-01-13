@@ -60,7 +60,7 @@ jobs:
       - name: Build Docker image
         working-directory: api
         run: |
-          docker build -f deployment/Dockerfile -t jalex86/nequi-franquicias:qa applications/app-service/build/libs/
+          docker build -f deployment/Dockerfile -t jalex86/nequi-franquicias:latest-qa applications/app-service/build/libs/
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -70,7 +70,7 @@ jobs:
 
       - name: Push Docker image
         run: |
-          docker push jalex86/nequi-franquicias:qa
+          docker push jalex86/nequi-franquicias:latest-qa
 
       - name: Update ECS service
         run: |

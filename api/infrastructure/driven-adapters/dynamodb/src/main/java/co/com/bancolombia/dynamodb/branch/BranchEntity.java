@@ -7,9 +7,9 @@ import lombok.Setter;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
-import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Builder
 @NoArgsConstructor
@@ -18,34 +18,31 @@ import java.time.LocalDateTime;
 @DynamoDbBean
 public class BranchEntity {
     
-    private String PK;
-    private String SK;
     private String id;
     private String franchiseId;
     private String name;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private String GSI1PK;
-    private String GSI2PK;
+    private String storageStrategy; // EMBEDDED | SEPARATED
+    private List<EmbeddedProduct> products; // Solo si EMBEDDED
     
     @DynamoDbPartitionKey
     public String getPK() {
-        return PK;
+        return "BRANCH#" + id;
+    }
+    
+    public void setPK(String pk) {
+        if (pk != null && pk.startsWith("BRANCH#")) {
+            this.id = pk.substring(7);
+        }
     }
     
     @DynamoDbSortKey
     public String getSK() {
-        return SK;
+        return "METADATA";
     }
     
-    @DynamoDbSecondaryPartitionKey(indexNames = "GSI1")
-    public String getGSI1PK() {
-        return GSI1PK;
-    }
-    
-    @DynamoDbSecondaryPartitionKey(indexNames = "GSI2")
-    public String getGSI2PK() {
-        return GSI2PK;
+    public void setSK(String sk) {
     }
     
     public String getId() {
@@ -66,5 +63,32 @@ public class BranchEntity {
     
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
+    }
+    
+    public String getStorageStrategy() {
+        return storageStrategy;
+    }
+    
+    public List<EmbeddedProduct> getProducts() {
+        return products;
+    }
+    
+    @DynamoDbBean
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Setter
+    public static class EmbeddedProduct {
+        private String id;
+        private String name;
+        private Integer stock;
+        private LocalDateTime createdAt;
+        private LocalDateTime updatedAt;
+        
+        public String getId() { return id; }
+        public String getName() { return name; }
+        public Integer getStock() { return stock; }
+        public LocalDateTime getCreatedAt() { return createdAt; }
+        public LocalDateTime getUpdatedAt() { return updatedAt; }
     }
 }

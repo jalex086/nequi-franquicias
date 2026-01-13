@@ -33,10 +33,20 @@ public class CreateProductUseCase {
         
         return branchRepository.findById(branchId)
                 .switchIfEmpty(Mono.error(new RuntimeException("Sucursal con ID " + branchId + " not found")))
-                .then(Mono.just(Product.create(franchiseId, branchId, name.trim(), stock)))
-                .map(product -> product.toBuilder()
-                        .id(UUID.randomUUID().toString())
-                        .build())
-                .flatMap(productRepository::save);
+                .flatMap(branch -> {
+                    Product newProduct = Product.create(franchiseId, branchId, name.trim(), stock)
+                            .toBuilder()
+                            .id(UUID.randomUUID().toString())
+                            .build();
+
+                    int currentProductCount = branch.getProducts() != null ? branch.getProducts().size() : 0;
+                    
+                    if (currentProductCount >= 100) {
+                        return productRepository.save(newProduct);
+                    } else {
+                        return branchRepository.addProduct(branchId, newProduct)
+                                .thenReturn(newProduct);
+                    }
+                });
     }
 }

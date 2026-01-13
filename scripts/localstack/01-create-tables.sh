@@ -60,10 +60,10 @@ delete_table_if_exists "business-franquicias-local"
 delete_table_if_exists "business-sucursales-local"
 delete_table_if_exists "business-productos-local"
 
-# Crear tablas
-create_table "business-franquicias-local" "id"
-create_table "business-sucursales-local" "franchiseId" "id"  
-create_table "business-productos-local" "franchiseId" "id"
+# Crear tablas con estructura PK+SK como en AWS
+create_table "business-franquicias-local" "PK" "SK"
+create_table "business-sucursales-local" "PK" "SK"  
+create_table "business-productos-local" "PK" "SK"
 
 echo "✅ Tablas DynamoDB creadas exitosamente!"
 

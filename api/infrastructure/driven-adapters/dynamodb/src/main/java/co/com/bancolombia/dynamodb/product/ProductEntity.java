@@ -18,8 +18,6 @@ import java.time.LocalDateTime;
 @DynamoDbBean
 public class ProductEntity {
     
-    private String PK;
-    private String SK;
     private String id;
     private String franchiseId;
     private String branchId;
@@ -27,28 +25,28 @@ public class ProductEntity {
     private Integer stock;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    
-    // Campos físicos para GSI
-    private String GSI1PK; // Para GSI1 - búsqueda por branchId
-    private String GSI2PK; // Para GSI2 - búsqueda por id
+    private String GSI1PK; // Para búsqueda por branchId
     
     @DynamoDbPartitionKey
     public String getPK() {
-        return PK;
+        return "PRODUCT#" + id;
+    }
+    
+    public void setPK(String pk) {
+        if (pk != null && pk.startsWith("PRODUCT#")) {
+            this.id = pk.substring(8);
+        }
     }
     
     @DynamoDbSortKey
     public String getSK() {
-        return SK;
-    }
-    private String GSI2PK; // Para GSI2 - búsqueda por id
-    
-    @DynamoDbPartitionKey
-    public String getFranchiseId() {
-        return franchiseId;
+        return "METADATA";
     }
     
-    @DynamoDbSortKey
+    public void setSK(String sk) {
+        // SK fijo
+    }
+    
     public String getId() {
         return id;
     }
@@ -58,9 +56,8 @@ public class ProductEntity {
         return GSI1PK;
     }
     
-    @DynamoDbSecondaryPartitionKey(indexNames = "GSI2")
-    public String getGSI2PK() {
-        return GSI2PK;
+    public String getFranchiseId() {
+        return franchiseId;
     }
     
     public String getBranchId() {

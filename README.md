@@ -178,15 +178,38 @@ curl http://localhost:8080/api/products/{embedded_product_id}
 ## 🏗️ Infrastructure & Deployment
 
 ### [🚀 Infrastructure Documentation](./infrastructure/README.md)
-- Arquitectura AWS completa
-- Terraform modules y configuración
-- Pipelines CI/CD con GitHub Actions
-- Monitoreo y observabilidad
+- **Backends separados** por ambiente (dev/qa/pdn)
+- **Terraform modules** con configuración uniforme
+- **GitHub Actions** para CI/CD automatizado
+- **Monitoreo** con CloudWatch y métricas
+
+### Comandos Rápidos
+```bash
+# Desplegar develop
+make deploy-dev
+
+# Desplegar QA  
+make deploy-qa
+
+# Ver estado de recursos
+make status-dev
+
+# Validar configuración
+make validate
+```
 
 ### Entornos Disponibles
-- **Development**: `business-franquicias-alb-dev-1817262481.us-east-1.elb.amazonaws.com`
-- **QA**: Configurado para testing automatizado
-- **Production**: Listo para despliegue con alta disponibilidad
+- **Development**: Deploy automático desde rama `develop`
+- **QA**: Deploy automático desde rama `qa`
+- **Production**: Deploy manual desde rama `main` con aprobación
+
+### Recursos AWS por Ambiente
+| Recurso | Develop | QA | Producción |
+|---------|---------|----|-----------| 
+| **ECS Cluster** | `business-cluster-dev` | `business-cluster-qa` | `business-cluster-pdn` |
+| **DynamoDB** | `business-*-dev` | `business-*-qa` | `business-*-pdn` |
+| **ALB** | `business-franquicias-alb-dev` | `business-franquicias-alb-qa` | `business-franquicias-alb-pdn` |
+| **Instancias** | 1 | 1 | 2 |
 
 ## 🏛️ Arquitectura
 

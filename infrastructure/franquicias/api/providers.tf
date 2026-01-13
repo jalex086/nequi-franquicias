@@ -8,13 +8,7 @@ terraform {
     }
   }
   
-  backend "s3" {
-    bucket         = "nequi-franquicias-terraform-state"
-    key            = "franquicias/api/terraform.tfstate"
-    region         = "us-east-1"
-    dynamodb_table = "nequi-franquicias-terraform-locks"
-    encrypt        = true
-  }
+  # Backend será configurado por ambiente en terraform init
 }
 
 provider "aws" {

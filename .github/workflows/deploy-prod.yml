@@ -90,11 +90,20 @@ jobs:
 
       - name: Deploy to ECS PRODUCTION
         run: |
-          # Forzar nuevo deployment del servicio ECS
+          # Obtener task definition actual
+          TASK_DEF=$(aws ecs describe-task-definition --task-definition business-franquicias-prod --region ${{ env.AWS_REGION }})
+          
+          # Crear nueva task definition con la nueva imagen
+          NEW_TASK_DEF=$(echo $TASK_DEF | jq --arg IMAGE "${{ secrets.DOCKERHUB_USERNAME }}/nequi-franquicias:$IMAGE_TAG" '.taskDefinition | .containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn) | del(.revision) | del(.status) | del(.requiresAttributes) | del(.placementConstraints) | del(.compatibilities) | del(.registeredAt) | del(.registeredBy)')
+          
+          # Registrar nueva task definition
+          aws ecs register-task-definition --region ${{ env.AWS_REGION }} --cli-input-json "$NEW_TASK_DEF"
+          
+          # Actualizar servicio con nueva task definition
           aws ecs update-service \
             --cluster business-cluster-prod \
             --service business-franquicias-prod \
-            --force-new-deployment \
+            --task-definition business-franquicias-prod \
             --region ${{ env.AWS_REGION }}
           
           # Esperar que el deployment se complete
@@ -103,7 +112,7 @@ jobs:
             --services business-franquicias-prod \
             --region ${{ env.AWS_REGION }}
           
-          echo "✅ Deployment to PRODUCTION completed successfully"
+          echo "✅ Deployment to PRODUCTION completed successfully with image tag: $IMAGE_TAG"
 
       - name: Health Check
         run: |

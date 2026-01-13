@@ -263,10 +263,6 @@ resource "aws_vpc_endpoint" "logs" {
 
   depends_on = [aws_security_group.vpc_endpoint]
 
-  lifecycle {
-    replace_triggered_by = [aws_security_group.vpc_endpoint]
-  }
-
   tags = merge(var.tags, {
     Name = "${local.service_name}-logs-endpoint"
   })

@@ -65,10 +65,29 @@ jobs:
           echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/nequi-franquicias:qa
 
+      - name: Configure AWS credentials for ECS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
       - name: Deploy to ECS QA
         run: |
-          # Actualizar servicio ECS
-          echo "Deploying to QA environment"
+          # Forzar nuevo deployment del servicio ECS
+          aws ecs update-service \
+            --cluster business-franquicias-cluster-qa \
+            --service business-franquicias-service-qa \
+            --force-new-deployment \
+            --region ${{ env.AWS_REGION }}
+          
+          # Esperar que el deployment se complete
+          aws ecs wait services-stable \
+            --cluster business-franquicias-cluster-qa \
+            --services business-franquicias-service-qa \
+            --region ${{ env.AWS_REGION }}
+          
+          echo "✅ Deployment to QA completed successfully"
 
   notify-qa-team:
     needs: deploy-application

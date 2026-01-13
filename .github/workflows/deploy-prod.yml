@@ -72,10 +72,29 @@ jobs:
           echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/nequi-franquicias:prod
 
+      - name: Configure AWS credentials for ECS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
       - name: Deploy to ECS PRODUCTION
         run: |
-          # Actualizar servicio ECS
-          echo "Deploying to PRODUCTION environment"
+          # Forzar nuevo deployment del servicio ECS
+          aws ecs update-service \
+            --cluster business-franquicias-cluster-prod \
+            --service business-franquicias-service-prod \
+            --force-new-deployment \
+            --region ${{ env.AWS_REGION }}
+          
+          # Esperar que el deployment se complete
+          aws ecs wait services-stable \
+            --cluster business-franquicias-cluster-prod \
+            --services business-franquicias-service-prod \
+            --region ${{ env.AWS_REGION }}
+          
+          echo "✅ Deployment to PRODUCTION completed successfully"
 
       - name: Health Check
         run: |

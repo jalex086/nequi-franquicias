@@ -83,11 +83,20 @@ jobs:
 
       - name: Deploy to ECS QA
         run: |
-          # Forzar nuevo deployment del servicio ECS
+          # Obtener task definition actual
+          TASK_DEF=$(aws ecs describe-task-definition --task-definition business-franquicias-qa --region ${{ env.AWS_REGION }})
+          
+          # Crear nueva task definition con la nueva imagen
+          NEW_TASK_DEF=$(echo $TASK_DEF | jq --arg IMAGE "${{ secrets.DOCKERHUB_USERNAME }}/nequi-franquicias:$IMAGE_TAG" '.taskDefinition | .containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn) | del(.revision) | del(.status) | del(.requiresAttributes) | del(.placementConstraints) | del(.compatibilities) | del(.registeredAt) | del(.registeredBy)')
+          
+          # Registrar nueva task definition
+          aws ecs register-task-definition --region ${{ env.AWS_REGION }} --cli-input-json "$NEW_TASK_DEF"
+          
+          # Actualizar servicio con nueva task definition
           aws ecs update-service \
             --cluster business-cluster-qa \
             --service business-franquicias-qa \
-            --force-new-deployment \
+            --task-definition business-franquicias-qa \
             --region ${{ env.AWS_REGION }}
           
           # Esperar que el deployment se complete
@@ -96,7 +105,7 @@ jobs:
             --services business-franquicias-qa \
             --region ${{ env.AWS_REGION }}
           
-          echo "✅ Deployment to QA completed successfully"
+          echo "✅ Deployment to QA completed successfully with image tag: $IMAGE_TAG"
 
   notify-qa-team:
     needs: deploy-application

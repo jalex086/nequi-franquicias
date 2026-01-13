@@ -1,6 +1,7 @@
 package co.com.bancolombia.usecase.product;
 
 import co.com.bancolombia.model.franchise.Product;
+import co.com.bancolombia.model.franchise.gateways.BranchRepository;
 import co.com.bancolombia.model.franchise.gateways.ProductRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,12 +22,15 @@ class UpdateProductStockUseCaseTest {
 
     @Mock
     private ProductRepository productRepository;
+    
+    @Mock
+    private BranchRepository branchRepository;
 
     private UpdateProductStockUseCase updateProductStockUseCase;
 
     @BeforeEach
     void setUp() {
-        updateProductStockUseCase = new UpdateProductStockUseCase(productRepository);
+        updateProductStockUseCase = new UpdateProductStockUseCase(productRepository, branchRepository);
     }
 
     @Test
@@ -66,7 +70,9 @@ class UpdateProductStockUseCaseTest {
     void shouldFailWhenProductNotFound() {
         // Given
         when(productRepository.findById(anyString()))
-                .thenReturn(Mono.empty());
+                .thenReturn(Mono.error(new RuntimeException("Product not found")));
+        when(branchRepository.findBranchIdByProductId(anyString()))
+                .thenReturn(Mono.error(new RuntimeException("Product not found")));
 
         // When & Then
         StepVerifier.create(updateProductStockUseCase.execute("nonexistent", 100))

@@ -16,9 +16,12 @@ public class DeleteProductUseCase {
     private final BranchRepository branchRepository;
     
     public Mono<Void> execute(String productId) {
-        return productRepository.deleteById(productId)
-                .onErrorResume(error -> branchRepository.findBranchIdByProductId(productId)
-                            .flatMap(branchId -> deleteEmbeddedInBranch(branchId, productId)));
+        return productRepository.findById(productId)
+                .flatMap(product -> productRepository.deleteById(productId))
+                .switchIfEmpty(
+                    branchRepository.findBranchIdByProductId(productId)
+                            .flatMap(branchId -> deleteEmbeddedInBranch(branchId, productId))
+                );
     }
     
     private Mono<Void> deleteEmbeddedInBranch(String branchId, String productId) {

@@ -75,3 +75,9 @@ jobs:
       - name: Update ECS service
         run: |
           aws ecs update-service --cluster business-cluster-pdn --service business-franquicias-pdn --force-new-deployment --region ${{ env.AWS_REGION }}
+          
+          # Esperar que el deployment se complete (20 minutos)
+          AWS_MAX_ATTEMPTS=80 aws ecs wait services-stable \
+            --cluster business-cluster-pdn \
+            --services business-franquicias-pdn \
+            --region ${{ env.AWS_REGION }}

@@ -37,7 +37,7 @@ public class RouterRest {
                 .PUT("/api/products/{id}/name", productHandler::updateProductName)
                 .PUT("/api/products/{id}/stock", productHandler::updateProductStock)
                 .GET("/api/franchises/{franchiseId}/products/top-stock", productHandler::getTopStockProducts)
-                .GET("/api/franchises/{franchiseId}/branches/top-stock-product", productHandler::getTopStockProductByBranch)
+                .GET("/api/franchises/{franchiseId}/branches/top-stock-products", productHandler::getTopStockProductByBranch)
                 
                 .build();
     }

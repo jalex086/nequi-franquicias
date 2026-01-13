@@ -225,7 +225,26 @@ aws dynamodb describe-table --table-name business-franquicias-local --endpoint-u
 
 ## 🧪 Pruebas del Esquema Híbrido
 
-### Probar Estrategia EMBEDDED
+### Script de Prueba Automatizado
+
+Ejecuta el script completo que demuestra el esquema híbrido:
+
+```bash
+./test-hybrid-schema.sh
+```
+
+Este script:
+- Crea 2 franquicias (McDonald's y Subway)
+- Crea 4 sucursales (2 por franquicia)
+- Crea productos para demostrar ambas estrategias:
+  - **EMBEDDED**: Sucursales con <100 productos
+  - **SEPARATED**: Sucursales con ≥100 productos
+- Verifica el cambio automático de estrategia
+- Proporciona comandos para probar las APIs
+
+### Pruebas Manuales
+
+#### Probar Estrategia EMBEDDED
 ```bash
 # 1. Crear franquicia
 curl -X POST http://localhost:8080/api/franchises \
@@ -250,8 +269,8 @@ aws dynamodb get-item --table-name business-sucursales-local \
 
 ### Probar Transición a SEPARATED
 ```bash
-# Script automatizado para crear 100+ productos
-./test-hybrid-strategy.sh
+# Script automatizado para probar esquema híbrido completo
+./test-hybrid-schema.sh
 
 # Verificar cambio automático a estrategia SEPARATED
 # - Productos 1-100: Embebidos en sucursal

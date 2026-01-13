@@ -317,7 +317,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/api/franchises/{{franchise_id}}/branches/top-stock-product",
+							"raw": "{{base_url}}/api/franchises/{{franchise_id}}/branches/top-stock-productss",
 							"host": [
 								"{{base_url}}"
 							],
@@ -326,7 +326,7 @@
 								"franchises",
 								"{{franchise_id}}",
 								"branches",
-								"top-stock-product"
+								"top-stock-products"
 							]
 						}
 					}

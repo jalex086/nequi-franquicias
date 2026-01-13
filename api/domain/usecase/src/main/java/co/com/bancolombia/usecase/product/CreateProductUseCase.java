@@ -1,11 +1,13 @@
 package co.com.bancolombia.usecase.product;
 
+import co.com.bancolombia.model.franchise.Branch;
 import co.com.bancolombia.model.franchise.Product;
 import co.com.bancolombia.model.franchise.gateways.BranchRepository;
 import co.com.bancolombia.model.franchise.gateways.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.UUID;
 
 @RequiredArgsConstructor
@@ -41,8 +43,16 @@ public class CreateProductUseCase {
 
                     int currentProductCount = branch.getProducts() != null ? branch.getProducts().size() : 0;
                     
-                    if (currentProductCount >= 100) {
-                        return productRepository.save(newProduct);
+                    if (currentProductCount >= 99) {
+                        return productRepository.save(newProduct)
+                                .flatMap(savedProduct -> {
+                                    Branch updatedBranch = branch.toBuilder()
+                                            .storageStrategy("SEPARATED")
+                                            .products(List.of())
+                                            .build();
+                                    return branchRepository.save(updatedBranch)
+                                            .thenReturn(savedProduct);
+                                });
                     } else {
                         return branchRepository.addProduct(branchId, newProduct)
                                 .thenReturn(newProduct);

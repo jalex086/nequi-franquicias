@@ -17,6 +17,8 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -104,9 +106,9 @@ class CreateProductUseCaseTest {
         String name = "Test Product";
         Integer stock = 50;
 
-        // Crear lista con 100 productos (límite alcanzado)
+        // Crear lista con 99 productos (al agregar uno más serán 100 = SEPARATED)
         List<Product> existingProducts = new ArrayList<>();
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 99; i++) {
             existingProducts.add(Product.builder().id("product-" + i).build());
         }
 
@@ -115,20 +117,28 @@ class CreateProductUseCaseTest {
                 .franchiseId(franchiseId)
                 .name("Test Branch")
                 .products(existingProducts)
+                .storageStrategy("EMBEDDED")
                 .build();
 
         Product expectedProduct = Product.builder()
-                .id("product-101")
+                .id("product-100")
                 .franchiseId(franchiseId)
                 .branchId(branchId)
                 .name(name)
                 .stock(stock)
                 .build();
 
+        Branch updatedBranch = branchWithManyProducts.toBuilder()
+                .storageStrategy("SEPARATED")
+                .products(List.of())
+                .build();
+
         when(branchRepository.findById(branchId))
                 .thenReturn(Mono.just(branchWithManyProducts));
         when(productRepository.save(any(Product.class)))
                 .thenReturn(Mono.just(expectedProduct));
+        when(branchRepository.save(any(Branch.class)))
+                .thenReturn(Mono.just(updatedBranch));
 
         // When & Then
         StepVerifier.create(createProductUseCase.execute(franchiseId, branchId, name, stock))
@@ -137,5 +147,10 @@ class CreateProductUseCaseTest {
                     product.getStock().equals(stock) &&
                     product.getBranchId().equals(branchId))
                 .verifyComplete();
+
+        // Verify that branch was updated to SEPARATED strategy
+        verify(branchRepository).save(argThat(branch -> 
+            "SEPARATED".equals(branch.getStorageStrategy()) && 
+            branch.getProducts().isEmpty()));
     }
 }

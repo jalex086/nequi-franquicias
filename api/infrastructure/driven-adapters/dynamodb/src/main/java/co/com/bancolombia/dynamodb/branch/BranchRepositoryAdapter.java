@@ -42,7 +42,7 @@ public class BranchRepositoryAdapter implements BranchRepository {
     
     @Override
     public Mono<Branch> save(Branch branch) {
-        String strategy = determineStorageStrategy(branch.getProducts());
+        String strategy = branch.getStorageStrategy() != null ? branch.getStorageStrategy() : determineStorageStrategy(branch.getProducts());
         BranchEntity entity = toEntity(branch, strategy);
         
         return Mono.fromFuture(getTable().putItem(entity))
@@ -151,7 +151,8 @@ public class BranchRepositoryAdapter implements BranchRepository {
                 .franchiseId(entity.getFranchiseId())
                 .name(entity.getName())
                 .createdAt(entity.getCreatedAt())
-                .updatedAt(entity.getUpdatedAt());
+                .updatedAt(entity.getUpdatedAt())
+                .storageStrategy(entity.getStorageStrategy());
 
         if (entity.getProducts() != null) {
             List<Product> products = entity.getProducts().stream()

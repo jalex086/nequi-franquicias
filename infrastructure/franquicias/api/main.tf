@@ -237,6 +237,25 @@ resource "aws_security_group" "ecs_service" {
   })
 }
 
+# Data source para encontrar el security group del VPC endpoint existente
+data "aws_security_group" "vpc_endpoint" {
+  filter {
+    name   = "tag:Name"
+    values = ["${local.service_name}-vpc-endpoint-sg"]
+  }
+  vpc_id = data.aws_vpc.main.id
+}
+
+# Security Group rule para VPC endpoint de CloudWatch Logs
+resource "aws_security_group_rule" "vpc_endpoint_from_ecs" {
+  type                     = "ingress"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  source_security_group_id = aws_security_group.ecs_service.id
+  security_group_id        = data.aws_security_group.vpc_endpoint.id
+}
+
 # CloudWatch Log Groups - uniformes
 resource "aws_cloudwatch_log_group" "app" {
   name              = "/ecs/${local.service_name}"

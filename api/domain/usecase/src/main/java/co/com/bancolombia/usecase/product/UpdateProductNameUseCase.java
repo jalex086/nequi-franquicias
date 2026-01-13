@@ -31,7 +31,7 @@ public class UpdateProductNameUseCase {
         return productRepository.findById(id)
                 .flatMap(product -> productRepository.save(product.updateName(name.trim())))
                 .onErrorResume(error -> branchRepository.findBranchIdByProductId(id)
-                            .flatMap(branchId -> updateEmbeddedInBranch(branchId, id, name.trim())););
+                            .flatMap(branchId -> updateEmbeddedInBranch(branchId, id, name.trim())));
     }
     
     private Mono<Product> updateEmbeddedInBranch(String branchId, String productId, String newName) {

@@ -30,14 +30,14 @@ jobs:
       - name: Deploy DynamoDB
         working-directory: infrastructure/transversal_dynamodb/business
         run: |
-          terraform init
+          terraform init -backend-config=backend-dev.hcl
           terraform plan -var-file=env/dev/terraform-dev.tfvars
           terraform apply -auto-approve -var-file=env/dev/terraform-dev.tfvars
 
       - name: Deploy API Infrastructure
         working-directory: infrastructure/franquicias/api
         run: |
-          terraform init
+          terraform init -backend-config=backend-dev.hcl
           terraform plan -var-file=env/dev/terraform-dev.tfvars
           terraform apply -auto-approve -var-file=env/dev/terraform-dev.tfvars
 

@@ -24,10 +24,7 @@ help:
 # Initialize Terraform
 init:
 	@echo "🚀 Initializing Terraform for $(MODULE) in $(ENV) environment..."
-	cd $(MODULE) && terraform init \
-		-backend-config="bucket=$(TF_STATE_BUCKET)" \
-		-backend-config="key=$(MODULE)/$(ENV)/terraform.tfstate" \
-		-backend-config="region=us-east-1"
+	cd $(MODULE) && terraform init -backend-config=backend-$(ENV).hcl
 
 # Plan changes
 plan:

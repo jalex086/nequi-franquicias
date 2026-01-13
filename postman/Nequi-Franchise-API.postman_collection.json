@@ -213,6 +213,24 @@
 					}
 				},
 				{
+					"name": "Get Product by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/products/{{product_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"products",
+								"{{product_id}}"
+							]
+						}
+					}
+				},
+				{
 					"name": "Delete Product",
 					"request": {
 						"method": "DELETE",
@@ -317,7 +335,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{base_url}}/api/franchises/{{franchise_id}}/branches/top-stock-productss",
+							"raw": "{{base_url}}/api/franchises/{{franchise_id}}/branches/top-stock-products",
 							"host": [
 								"{{base_url}}"
 							],

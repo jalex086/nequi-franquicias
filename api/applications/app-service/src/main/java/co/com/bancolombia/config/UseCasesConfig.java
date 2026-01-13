@@ -52,13 +52,13 @@ public class UseCasesConfig {
     }
     
     @Bean
-    public UpdateProductNameUseCase updateProductNameUseCase(ProductRepository repository) {
-        return new UpdateProductNameUseCase(repository);
+    public UpdateProductNameUseCase updateProductNameUseCase(ProductRepository productRepository, BranchRepository branchRepository) {
+        return new UpdateProductNameUseCase(productRepository, branchRepository);
     }
     
     @Bean
-    public UpdateProductStockUseCase updateProductStockUseCase(ProductRepository repository) {
-        return new UpdateProductStockUseCase(repository);
+    public UpdateProductStockUseCase updateProductStockUseCase(ProductRepository productRepository, BranchRepository branchRepository) {
+        return new UpdateProductStockUseCase(productRepository, branchRepository);
     }
     
     @Bean
@@ -77,7 +77,7 @@ public class UseCasesConfig {
     }
     
     @Bean
-    public DeleteProductUseCase deleteProductUseCase(ProductRepository repository) {
-        return new DeleteProductUseCase(repository);
+    public DeleteProductUseCase deleteProductUseCase(ProductRepository productRepository, BranchRepository branchRepository) {
+        return new DeleteProductUseCase(productRepository, branchRepository);
     }
 }

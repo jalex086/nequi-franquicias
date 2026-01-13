@@ -148,6 +148,26 @@ aws dynamodb list-tables --endpoint-url http://localhost:4566 --region us-east-1
 aws dynamodb describe-table --table-name business-franquicias-local --endpoint-url http://localhost:4566 --region us-east-1
 ```
 
+#### Problemas con Productos SEPARATED
+```bash
+# Si las operaciones CRUD fallan en productos separados:
+# 1. Verificar que el producto existe
+aws dynamodb get-item --table-name business-productos-local \
+  --endpoint-url http://localhost:4566 --region us-east-1 \
+  --key '{"PK":{"S":"PRODUCT#{product_id}"},"SK":{"S":"METADATA"}}'
+
+# 2. Verificar logs de la aplicación para errores de Enhanced Client
+# 3. El sistema usa cliente básico DynamoDB para mayor compatibilidad
+```
+
+#### Productos Embebidos con branchId null
+```bash
+# Problema resuelto en versión actual
+# Si persiste, verificar que la aplicación esté actualizada:
+curl http://localhost:8080/api/products/{embedded_product_id}
+# Debe devolver branchId poblado correctamente
+```
+
 ## 📚 Documentación Técnica
 
 ### [📖 API Documentation](./api/README.md)
@@ -211,16 +231,21 @@ aws dynamodb describe-table --table-name business-franquicias-local --endpoint-u
 
 ✅ **Gestión de Productos**
 - Crear producto en sucursal
+- **Obtener producto individual** (GET /api/products/{id})
 - Eliminar producto de sucursal
 - Actualizar nombre y stock de producto
 - Consultar productos con mayor stock por franquicia
 - Consultar producto con mayor stock por sucursal
+- **Operaciones CRUD transparentes** en ambas estrategias
 
-✅ **Esquema Híbrido DynamoDB**
+✅ **Esquema Híbrido DynamoDB - 100% Funcional**
 - **Estrategia EMBEDDED**: Productos <100 embebidos en sucursal
 - **Estrategia SEPARATED**: Productos ≥100 en tabla separada
 - **Transición automática**: Cambio transparente al alcanzar límite
-- **Concurrencia robusta**: UpdateExpression atómica para productos embebidos
+- **Búsquedas GSI**: Localización eficiente con `findBranchIdByProductId`
+- **Cliente básico DynamoDB**: Compatibilidad total con composite keys
+- **Validaciones robustas**: Manejo de casos null y errores
+- **branchId consistente**: Siempre poblado en respuestas API
 - **Monitoreo**: Campo `storageStrategy` indica estrategia actual
 
 ## 🧪 Pruebas del Esquema Híbrido
@@ -241,6 +266,28 @@ Este script:
   - **SEPARATED**: Sucursales con ≥100 productos
 - Verifica el cambio automático de estrategia
 - Proporciona comandos para probar las APIs
+
+### Pruebas CRUD Completas
+
+```bash
+# Obtener producto (ambas estrategias)
+curl http://localhost:8080/api/products/{product_id}
+
+# Actualizar nombre (ambas estrategias)
+curl -X PUT http://localhost:8080/api/products/{product_id}/name \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Nuevo Nombre"}'
+
+# Actualizar stock (ambas estrategias)  
+curl -X PUT http://localhost:8080/api/products/{product_id}/stock \
+  -H "Content-Type: application/json" \
+  -d '{"stock": 100}'
+
+# Eliminar producto (ambas estrategias)
+curl -X DELETE http://localhost:8080/api/products/{product_id}
+```
+
+**Todas las operaciones devuelven el branchId correctamente poblado.**
 
 ### Pruebas Manuales
 

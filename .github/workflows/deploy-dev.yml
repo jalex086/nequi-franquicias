@@ -99,8 +99,8 @@ jobs:
             --task-definition business-franquicias-dev \
             --region ${{ env.AWS_REGION }}
           
-          # Esperar que el deployment se complete
-          aws ecs wait services-stable \
+          # Esperar que el deployment se complete (aumentado a 20 minutos)
+          AWS_MAX_ATTEMPTS=80 aws ecs wait services-stable \
             --cluster business-cluster-dev \
             --services business-franquicias-dev \
             --region ${{ env.AWS_REGION }}

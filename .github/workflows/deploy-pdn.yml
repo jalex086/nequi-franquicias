@@ -57,21 +57,27 @@ jobs:
         run: |
           ./gradlew build -x test
 
-      - name: Build Docker image
-        working-directory: api
+      - name: Build and Push Docker Image
         run: |
-          docker build -f deployment/Dockerfile -t jalex86/nequi-franquicias:latest-pdn applications/app-service/build/libs/
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Push Docker image
-        run: |
-          docker push jalex86/nequi-franquicias:latest-pdn
+          # Crear tag con formato Nequi: YYYYMMDD.run_number
+          IMAGE_TAG="$(date +%Y%m%d).${{ github.run_number }}"
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+          
+          # Build y push con tag único
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/nequi-franquicias:$IMAGE_TAG -f api/deployment/Dockerfile api/applications/app-service/build/libs/
+          echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/nequi-franquicias:$IMAGE_TAG
+          
+          # También tagear como 'latest-pdn' para referencia
+          docker tag ${{ secrets.DOCKERHUB_USERNAME }}/nequi-franquicias:$IMAGE_TAG ${{ secrets.DOCKERHUB_USERNAME }}/nequi-franquicias:latest-pdn
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/nequi-franquicias:latest-pdn
 
       - name: Update ECS service
         run: |
           aws ecs update-service --cluster business-cluster-pdn --service business-franquicias-pdn --force-new-deployment --region ${{ env.AWS_REGION }}
+          
+          # Esperar que el deployment se complete (20 minutos)
+          AWS_MAX_ATTEMPTS=80 aws ecs wait services-stable \
+            --cluster business-cluster-pdn \
+            --services business-franquicias-pdn \
+            --region ${{ env.AWS_REGION }}

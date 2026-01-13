@@ -11,7 +11,7 @@ locals {
   target_group_name = "${var.capacity}-${var.functionality}-tg-${var.env}"
 
   # Container configuration uniforme
-  container_image = "${var.container_image}:${var.env}"
+  container_image = "${var.container_image}:latest-${var.env}"
 
   # Resource sizing uniforme (simplificado)
   cpu    = 1024

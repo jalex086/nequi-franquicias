@@ -34,7 +34,7 @@ public class BranchRepositoryAdapter implements BranchRepository {
     @Override
     public Mono<Branch> findById(String id) {
         return Flux.from(getTable().index("GSI1")
-                .query(QueryConditional.keyEqualTo(k -> k.partitionValue(id)))
+                .query(QueryConditional.keyEqualTo(k -> k.partitionValue("BRANCH#" + id)))
                 .flatMapIterable(page -> page.items()))
                 .next()
                 .map(this::toDomain);
@@ -42,8 +42,9 @@ public class BranchRepositoryAdapter implements BranchRepository {
     
     @Override
     public Flux<Branch> findByFranchiseId(String franchiseId) {
-        return Flux.from(getTable().query(QueryConditional.keyEqualTo(k -> k.partitionValue(franchiseId)))
+        return Flux.from(getTable().query(QueryConditional.keyEqualTo(k -> k.partitionValue("FRANCHISE#" + franchiseId)))
                 .flatMapIterable(page -> page.items()))
+                .filter(entity -> entity.getSK().startsWith("BRANCH#"))
                 .map(this::toDomain);
     }
     
@@ -55,13 +56,15 @@ public class BranchRepositoryAdapter implements BranchRepository {
     
     private BranchEntity toEntity(Branch branch) {
         return BranchEntity.builder()
+                .PK("FRANCHISE#" + branch.getFranchiseId())
+                .SK("BRANCH#" + branch.getId())
                 .id(branch.getId())
                 .franchiseId(branch.getFranchiseId())
                 .name(branch.getName())
                 .createdAt(branch.getCreatedAt())
                 .updatedAt(branch.getUpdatedAt())
-                .GSI1PK(branch.getId()) // Para buscar por ID de sucursal
-                .GSI2PK("BRANCH#" + branch.getFranchiseId()) // Para buscar sucursales por franquicia
+                .GSI1PK("BRANCH#" + branch.getId()) // Para buscar por ID de sucursal
+                .GSI2PK("FRANCHISE_BRANCHES#" + branch.getFranchiseId()) // Para buscar sucursales por franquicia
                 .build();
     }
     

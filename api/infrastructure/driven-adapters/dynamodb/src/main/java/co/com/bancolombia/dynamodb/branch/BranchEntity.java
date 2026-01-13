@@ -18,6 +18,8 @@ import java.time.LocalDateTime;
 @DynamoDbBean
 public class BranchEntity {
     
+    private String PK;
+    private String SK;
     private String id;
     private String franchiseId;
     private String name;
@@ -27,13 +29,13 @@ public class BranchEntity {
     private String GSI2PK;
     
     @DynamoDbPartitionKey
-    public String getFranchiseId() {
-        return franchiseId;
+    public String getPK() {
+        return PK;
     }
     
     @DynamoDbSortKey
-    public String getId() {
-        return id;
+    public String getSK() {
+        return SK;
     }
     
     @DynamoDbSecondaryPartitionKey(indexNames = "GSI1")
@@ -44,6 +46,14 @@ public class BranchEntity {
     @DynamoDbSecondaryPartitionKey(indexNames = "GSI2")
     public String getGSI2PK() {
         return GSI2PK;
+    }
+    
+    public String getId() {
+        return id;
+    }
+    
+    public String getFranchiseId() {
+        return franchiseId;
     }
     
     public String getName() {

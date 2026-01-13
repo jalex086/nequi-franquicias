@@ -18,6 +18,8 @@ import java.time.LocalDateTime;
 @DynamoDbBean
 public class ProductEntity {
     
+    private String PK;
+    private String SK;
     private String id;
     private String franchiseId;
     private String branchId;
@@ -28,6 +30,17 @@ public class ProductEntity {
     
     // Campos físicos para GSI
     private String GSI1PK; // Para GSI1 - búsqueda por branchId
+    private String GSI2PK; // Para GSI2 - búsqueda por id
+    
+    @DynamoDbPartitionKey
+    public String getPK() {
+        return PK;
+    }
+    
+    @DynamoDbSortKey
+    public String getSK() {
+        return SK;
+    }
     private String GSI2PK; // Para GSI2 - búsqueda por id
     
     @DynamoDbPartitionKey

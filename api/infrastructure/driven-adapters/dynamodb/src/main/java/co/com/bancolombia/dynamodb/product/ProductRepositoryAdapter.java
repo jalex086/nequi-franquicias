@@ -33,10 +33,7 @@ public class ProductRepositoryAdapter implements ProductRepository {
     
     @Override
     public Mono<Product> findById(String id) {
-        return Flux.from(getTable().index("GSI2")
-                .query(QueryConditional.keyEqualTo(k -> k.partitionValue(id)))
-                .flatMapIterable(page -> page.items()))
-                .next()
+        return Mono.fromFuture(getTable().getItem(r -> r.key(k -> k.partitionValue(id))))
                 .map(this::toDomain);
     }
     
@@ -50,8 +47,8 @@ public class ProductRepositoryAdapter implements ProductRepository {
     
     @Override
     public Flux<Product> findByFranchiseId(String franchiseId) {
-        return Flux.from(getTable().query(QueryConditional.keyEqualTo(k -> k.partitionValue(franchiseId)))
-                .flatMapIterable(page -> page.items()))
+        return Flux.from(getTable().scan().items())
+                .filter(entity -> franchiseId.equals(entity.getFranchiseId()))
                 .map(this::toDomain);
     }
     
@@ -66,10 +63,7 @@ public class ProductRepositoryAdapter implements ProductRepository {
     
     @Override
     public Mono<Void> deleteById(String id) {
-        return findById(id)
-                .flatMap(product -> Mono.fromFuture(getTable().deleteItem(r -> r.key(k -> k
-                        .partitionValue(product.getFranchiseId())
-                        .sortValue(product.getId())))))
+        return Mono.fromFuture(getTable().deleteItem(r -> r.key(k -> k.partitionValue(id))))
                 .then();
     }
     
@@ -83,11 +77,13 @@ public class ProductRepositoryAdapter implements ProductRepository {
                 .createdAt(product.getCreatedAt())
                 .updatedAt(product.getUpdatedAt())
                 .GSI1PK(product.getBranchId()) // Para búsqueda por sucursal
-                .GSI2PK(product.getId())       // Para búsqueda por ID
                 .build();
     }
     
     private Product toDomain(ProductEntity entity) {
+        if (entity == null) {
+            return null;
+        }
         return Product.builder()
                 .id(entity.getId())
                 .franchiseId(entity.getFranchiseId())

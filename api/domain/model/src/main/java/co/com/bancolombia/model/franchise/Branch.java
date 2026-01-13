@@ -15,6 +15,7 @@ public class Branch {
     LocalDateTime createdAt;
     LocalDateTime updatedAt;
     List<Product> products;
+    String storageStrategy; // EMBEDDED | SEPARATED
     
     public static Branch create(String franchiseId, String name) {
         return Branch.builder()

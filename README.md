@@ -1,7 +1,7 @@
 # Sistema de Gestión de Franquicias - Nequi
 
 ## Descripción
-Microservicio completo para la gestión de franquicias, sucursales y productos, desarrollado como prueba técnica para Nequi. Implementa Clean Architecture con Spring WebFlux y despliegue en AWS.
+Microservicio completo para la gestión de franquicias, sucursales y productos, desarrollado como prueba técnica para Nequi. Implementa Clean Architecture con Spring WebFlux, **esquema híbrido DynamoDB** y despliegue en AWS.
 
 ## 🚀 Despliegue Local - Guía Completa
 
@@ -155,10 +155,18 @@ aws dynamodb describe-table --table-name business-franquicias-local --endpoint-u
 - Arquitectura Clean detallada
 - Patrones de diseño implementados
 
-### [📋 Architectural Decisions](./docs/architectural-decisions.md)
-- Decisiones técnicas documentadas
-- Justificaciones arquitectónicas
-- Alternativas consideradas
+## 🏗️ Infrastructure & Deployment
+
+### [🚀 Infrastructure Documentation](./infrastructure/README.md)
+- Arquitectura AWS completa
+- Terraform modules y configuración
+- Pipelines CI/CD con GitHub Actions
+- Monitoreo y observabilidad
+
+### Entornos Disponibles
+- **Development**: `business-franquicias-alb-dev-1817262481.us-east-1.elb.amazonaws.com`
+- **QA**: Configurado para testing automatizado
+- **Production**: Listo para despliegue con alta disponibilidad
 
 ## 🏛️ Arquitectura
 
@@ -208,13 +216,83 @@ aws dynamodb describe-table --table-name business-franquicias-local --endpoint-u
 - Consultar productos con mayor stock por franquicia
 - Consultar producto con mayor stock por sucursal
 
-✅ **Características Técnicas**
-- API REST completamente reactiva (Mono/Flux)
-- Validaciones robustas con Bean Validation
-- Manejo de errores centralizado
-- Logging estructurado
-- Health checks configurados
-- Documentación OpenAPI 3.0
+✅ **Esquema Híbrido DynamoDB**
+- **Estrategia EMBEDDED**: Productos <100 embebidos en sucursal
+- **Estrategia SEPARATED**: Productos ≥100 en tabla separada
+- **Transición automática**: Cambio transparente al alcanzar límite
+- **Concurrencia robusta**: UpdateExpression atómica para productos embebidos
+- **Monitoreo**: Campo `storageStrategy` indica estrategia actual
+
+## 🧪 Pruebas del Esquema Híbrido
+
+### Script de Prueba Automatizado
+
+Ejecuta el script completo que demuestra el esquema híbrido:
+
+```bash
+./test-hybrid-schema.sh
+```
+
+Este script:
+- Crea 2 franquicias (McDonald's y Subway)
+- Crea 4 sucursales (2 por franquicia)
+- Crea productos para demostrar ambas estrategias:
+  - **EMBEDDED**: Sucursales con <100 productos
+  - **SEPARATED**: Sucursales con ≥100 productos
+- Verifica el cambio automático de estrategia
+- Proporciona comandos para probar las APIs
+
+### Pruebas Manuales
+
+#### Probar Estrategia EMBEDDED
+```bash
+# 1. Crear franquicia
+curl -X POST http://localhost:8080/api/franchises \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Test Híbrido"}'
+
+# 2. Crear sucursal
+curl -X POST http://localhost:8080/api/franchises/{franchise_id}/branches \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Sucursal Test"}'
+
+# 3. Crear producto (se embebe en sucursal)
+curl -X POST http://localhost:8080/api/franchises/{franchise_id}/branches/{branch_id}/products \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Producto Embebido", "stock": 50}'
+
+# 4. Verificar estrategia EMBEDDED
+aws dynamodb get-item --table-name business-sucursales-local \
+  --endpoint-url http://localhost:4566 --region us-east-1 \
+  --key '{"PK":{"S":"BRANCH#{branch_id}"},"SK":{"S":"METADATA"}}'
+```
+
+### Probar Transición a SEPARATED
+```bash
+# Script automatizado para probar esquema híbrido completo
+./test-hybrid-schema.sh
+
+# Verificar cambio automático a estrategia SEPARATED
+# - Productos 1-100: Embebidos en sucursal
+# - Producto 101+: En tabla business-productos-local
+```
+
+### Verificar Concurrencia
+```bash
+# Crear múltiples productos simultáneamente
+for i in {1..10}; do
+  curl -X POST http://localhost:8080/api/franchises/{franchise_id}/branches/{branch_id}/products \
+    -H "Content-Type: application/json" \
+    -d "{\"name\": \"Producto Concurrente $i\", \"stock\": $i}" &
+done
+wait
+
+# Verificar que todos los productos se guardaron correctamente
+aws dynamodb get-item --table-name business-sucursales-local \
+  --endpoint-url http://localhost:4566 --region us-east-1 \
+  --key '{"PK":{"S":"BRANCH#{branch_id}"},"SK":{"S":"METADATA"}}' \
+  --projection-expression "products" | jq '.Item.products.L | length'
+```
 
 ## 🔧 Configuración de Desarrollo
 
@@ -274,10 +352,6 @@ git push origin v1.0.0
 ## 👨💻 Información del Desarrollador
 
 **Jonathan Alexander Mosquera Ramirez**
-- Arquitectura Clean implementada
-- Programación reactiva con WebFlux
-- Infraestructura como código con Terraform
-- Despliegue automatizado en AWS
 
 ---
 

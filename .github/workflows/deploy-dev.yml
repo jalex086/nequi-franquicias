@@ -60,9 +60,18 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/nequi-franquicias:dev -f api/deployment/Dockerfile api/applications/app-service/build/libs/
+          # Crear tag con formato Nequi: YYYYMMDD.run_number
+          IMAGE_TAG="$(date +%Y%m%d).${{ github.run_number }}"
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
+          
+          # Build y push con tag único
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/nequi-franquicias:$IMAGE_TAG -f api/deployment/Dockerfile api/applications/app-service/build/libs/
           echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/nequi-franquicias:dev
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/nequi-franquicias:$IMAGE_TAG
+          
+          # También tagear como 'latest-dev' para referencia
+          docker tag ${{ secrets.DOCKERHUB_USERNAME }}/nequi-franquicias:$IMAGE_TAG ${{ secrets.DOCKERHUB_USERNAME }}/nequi-franquicias:latest-dev
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/nequi-franquicias:latest-dev
 
       - name: Configure AWS credentials for ECS
         uses: aws-actions/configure-aws-credentials@v4
@@ -73,7 +82,7 @@ jobs:
 
       - name: Deploy to ECS DEV
         run: |
-          # Forzar nuevo deployment del servicio ECS
+          # Actualizar task definition con nueva imagen
           aws ecs update-service \
             --cluster business-cluster-dev \
             --service business-franquicias-dev \
@@ -86,4 +95,4 @@ jobs:
             --services business-franquicias-dev \
             --region ${{ env.AWS_REGION }}
           
-          echo "✅ Deployment to DEV completed successfully"
+          echo "✅ Deployment to DEV completed successfully with image tag: $IMAGE_TAG"

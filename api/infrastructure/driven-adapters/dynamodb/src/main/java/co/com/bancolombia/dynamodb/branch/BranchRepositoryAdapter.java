@@ -13,6 +13,8 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
 
 import java.util.ArrayList;
@@ -29,6 +31,7 @@ public class BranchRepositoryAdapter implements BranchRepository {
     private static final String SEPARATED_STRATEGY = "SEPARATED";
     private static final String BRANCH_PREFIX = "BRANCH#";
     private static final String METADATA_SK = "METADATA";
+    private static final String PRODUCTS = "products";
     
     private final DynamoDbEnhancedAsyncClient dynamoClient;
     private final DynamoDBProperties properties;
@@ -172,5 +175,33 @@ public class BranchRepositoryAdapter implements BranchRepository {
                 .createdAt(embedded.getCreatedAt())
                 .updatedAt(embedded.getUpdatedAt())
                 .build();
+    }
+
+    @Override
+    public Mono<String> findBranchIdByProductId(String productId) {
+        return Mono.fromFuture(basicDynamoClient.getItem(GetItemRequest.builder()
+                .tableName(properties.getTables().getProducts())
+                .key(Map.of(
+                    "PK", AttributeValue.builder().s("PRODUCT#" + productId).build(),
+                    "SK", AttributeValue.builder().s(METADATA_SK).build()
+                ))
+                .build()))
+                .filter(response -> response.item() != null && !response.item().isEmpty())
+                .map(response -> response.item().get("branchId").s())
+                .switchIfEmpty(
+                    Mono.fromFuture(basicDynamoClient.scan(ScanRequest.builder()
+                            .tableName(properties.getTables().getBranches())
+                            .build()))
+                            .flatMapMany(response -> Flux.fromIterable(response.items()))
+                            .filter(item -> {
+                                if (item.get(PRODUCTS) != null && item.get(PRODUCTS).l() != null) {
+                                    return item.get(PRODUCTS).l().stream()
+                                            .anyMatch(p -> productId.equals(p.m().get("id").s()));
+                                }
+                                return false;
+                            })
+                            .map(item -> item.get("PK").s().replace(BRANCH_PREFIX, ""))
+                            .next()
+                );
     }
 }

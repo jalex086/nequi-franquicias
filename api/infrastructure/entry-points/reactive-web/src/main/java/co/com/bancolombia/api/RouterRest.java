@@ -33,6 +33,7 @@ public class RouterRest {
                 // Product routes
                 .POST("/api/franchises/{franchiseId}/branches/{branchId}/products", productHandler::createProduct)
                 .GET("/api/branches/{branchId}/products", productHandler::getProductsByBranch)
+                .GET("/api/products/{id}", productHandler::getProduct)
                 .DELETE("/api/products/{id}", productHandler::deleteProduct)
                 .PUT("/api/products/{id}/name", productHandler::updateProductName)
                 .PUT("/api/products/{id}/stock", productHandler::updateProductStock)

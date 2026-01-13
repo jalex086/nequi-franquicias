@@ -7,6 +7,7 @@ import co.com.bancolombia.api.dto.UpdateProductNameRequest;
 import co.com.bancolombia.api.dto.UpdateProductStockRequest;
 import co.com.bancolombia.model.franchise.Product;
 import co.com.bancolombia.model.franchise.gateways.BranchRepository;
+import co.com.bancolombia.model.franchise.gateways.ProductRepository;
 import co.com.bancolombia.usecase.product.CreateProductUseCase;
 import co.com.bancolombia.usecase.product.DeleteProductUseCase;
 import co.com.bancolombia.usecase.product.GetProductsByBranchUseCase;
@@ -37,6 +38,7 @@ public class ProductHandler {
     private final UpdateProductNameUseCase updateProductNameUseCase;
     private final UpdateProductStockUseCase updateProductStockUseCase;
     private final BranchRepository branchRepository;
+    private final ProductRepository productRepository;
     
     public Mono<ServerResponse> createProduct(ServerRequest request) {
         String franchiseId = request.pathVariable(FRANCHISE_ID_PATH_VARIABLE);
@@ -53,6 +55,14 @@ public class ProductHandler {
                 .map(this::toResponse)
                 .collectList()
                 .flatMap(products -> ServerResponse.ok().bodyValue(products));
+    }
+    
+    public Mono<ServerResponse> getProduct(ServerRequest request) {
+        String productId = request.pathVariable(ID_PATH_VARIABLE);
+        return productRepository.findById(productId)
+                .map(this::toResponse)
+                .flatMap(response -> ServerResponse.ok().bodyValue(response))
+                .onErrorResume(error -> ServerResponse.notFound().build());
     }
     
     public Mono<ServerResponse> deleteProduct(ServerRequest request) {

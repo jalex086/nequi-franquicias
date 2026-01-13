@@ -11,12 +11,21 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
+import software.amazon.awssdk.services.dynamodb.DynamoDbAsyncClient;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
+
+import java.time.LocalDateTime;
+import java.util.Map;
 
 @Repository
 @RequiredArgsConstructor
 public class ProductRepositoryAdapter implements ProductRepository {
     
     private final DynamoDbEnhancedAsyncClient dynamoClient;
+    private final DynamoDbAsyncClient basicDynamoClient;
     private final DynamoDBProperties properties;
     
     private DynamoDbAsyncTable<ProductEntity> getTable() {
@@ -26,15 +35,49 @@ public class ProductRepositoryAdapter implements ProductRepository {
     
     @Override
     public Mono<Product> save(Product product) {
-        ProductEntity entity = toEntity(product);
-        return Mono.fromFuture(getTable().putItem(entity))
+        Map<String, AttributeValue> item = Map.of(
+            "PK", AttributeValue.builder().s("PRODUCT#" + product.getId()).build(),
+            "SK", AttributeValue.builder().s("METADATA").build(),
+            "id", AttributeValue.builder().s(product.getId()).build(),
+            "franchiseId", AttributeValue.builder().s(product.getFranchiseId()).build(),
+            "branchId", AttributeValue.builder().s(product.getBranchId()).build(),
+            "name", AttributeValue.builder().s(product.getName()).build(),
+            "stock", AttributeValue.builder().n(String.valueOf(product.getStock())).build(),
+            "createdAt", AttributeValue.builder().s(product.getCreatedAt().toString()).build(),
+            "updatedAt", AttributeValue.builder().s(product.getUpdatedAt().toString()).build(),
+            "GSI1PK", AttributeValue.builder().s(product.getBranchId()).build()
+        );
+        
+        return Mono.fromFuture(basicDynamoClient.putItem(PutItemRequest.builder()
+                .tableName(properties.getTables().getProducts())
+                .item(item)
+                .build()))
                 .thenReturn(product);
     }
     
     @Override
     public Mono<Product> findById(String id) {
-        return Mono.fromFuture(getTable().getItem(r -> r.key(k -> k.partitionValue(id))))
-                .map(this::toDomain);
+        return Mono.fromFuture(basicDynamoClient.getItem(GetItemRequest.builder()
+                .tableName(properties.getTables().getProducts())
+                .key(Map.of(
+                    "PK", AttributeValue.builder().s("PRODUCT#" + id).build(),
+                    "SK", AttributeValue.builder().s("METADATA").build()
+                ))
+                .build()))
+                .filter(response -> response.item() != null && !response.item().isEmpty())
+                .map(response -> {
+                    Map<String, AttributeValue> item = response.item();
+                    return Product.builder()
+                            .id(item.get("id").s())
+                            .franchiseId(item.get("franchiseId").s())
+                            .branchId(item.get("branchId").s())
+                            .name(item.get("name").s())
+                            .stock(Integer.parseInt(item.get("stock").n()))
+                            .createdAt(LocalDateTime.parse(item.get("createdAt").s()))
+                            .updatedAt(LocalDateTime.parse(item.get("updatedAt").s()))
+                            .build();
+                })
+                .switchIfEmpty(Mono.error(new RuntimeException("Product not found")));
     }
     
     @Override
@@ -63,7 +106,13 @@ public class ProductRepositoryAdapter implements ProductRepository {
     
     @Override
     public Mono<Void> deleteById(String id) {
-        return Mono.fromFuture(getTable().deleteItem(r -> r.key(k -> k.partitionValue(id))))
+        return Mono.fromFuture(basicDynamoClient.deleteItem(DeleteItemRequest.builder()
+                .tableName(properties.getTables().getProducts())
+                .key(Map.of(
+                    "PK", AttributeValue.builder().s("PRODUCT#" + id).build(),
+                    "SK", AttributeValue.builder().s("METADATA").build()
+                ))
+                .build()))
                 .then();
     }
     

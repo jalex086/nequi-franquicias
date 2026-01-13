@@ -11,4 +11,5 @@ public interface BranchRepository {
     Flux<Branch> findByFranchiseId(String franchiseId);
     Mono<Void> deleteById(String id);
     Mono<Branch> addProduct(String branchId, Product product);
+    Mono<String> findBranchIdByProductId(String productId);
 }

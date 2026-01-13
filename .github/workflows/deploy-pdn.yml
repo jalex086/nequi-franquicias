@@ -1,12 +1,12 @@
-name: Deploy to QA
+name: Deploy to PDN
 
 on:
   push:
-    branches: [release]
+    branches: [main]
 
 env:
   AWS_REGION: us-east-1
-  ENVIRONMENT: qa
+  ENVIRONMENT: pdn
 
 jobs:
   deploy-infrastructure:
@@ -30,15 +30,15 @@ jobs:
         working-directory: infrastructure/transversal_dynamodb/business
         run: |
           terraform init
-          terraform plan -var-file=env/qa/terraform-qa.tfvars
-          terraform apply -auto-approve -var-file=env/qa/terraform-qa.tfvars
+          terraform plan -var-file=env/pdn/terraform-pdn.tfvars
+          terraform apply -auto-approve -var-file=env/pdn/terraform-pdn.tfvars
 
       - name: Deploy API Infrastructure
         working-directory: infrastructure/franquicias/api
         run: |
-          terraform init -backend-config=backend-qa.hcl
-          terraform plan -var-file=env/qa/terraform-qa.tfvars
-          terraform apply -auto-approve -var-file=env/qa/terraform-qa.tfvars
+          terraform init -backend-config=backend-pdn.hcl
+          terraform plan -var-file=env/pdn/terraform-pdn.tfvars
+          terraform apply -auto-approve -var-file=env/pdn/terraform-pdn.tfvars
 
   deploy-application:
     needs: deploy-infrastructure
@@ -60,7 +60,7 @@ jobs:
       - name: Build Docker image
         working-directory: api
         run: |
-          docker build -t jalex86/nequi-franquicias:qa .
+          docker build -t jalex86/nequi-franquicias:pdn .
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -70,8 +70,8 @@ jobs:
 
       - name: Push Docker image
         run: |
-          docker push jalex86/nequi-franquicias:qa
+          docker push jalex86/nequi-franquicias:pdn
 
       - name: Update ECS service
         run: |
-          aws ecs update-service --cluster business-cluster-qa --service business-franquicias-qa --force-new-deployment --region ${{ env.AWS_REGION }}
+          aws ecs update-service --cluster business-cluster-pdn --service business-franquicias-pdn --force-new-deployment --region ${{ env.AWS_REGION }}

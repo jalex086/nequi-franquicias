@@ -42,7 +42,9 @@ public class FranchiseHandler {
         return getAllFranchisesUseCase.execute()
                 .map(this::toResponse)
                 .collectList()
-                .flatMap(franchises -> ServerResponse.ok().bodyValue(franchises));
+                .flatMap(franchises -> ServerResponse.ok()
+                        .header("X-Total-Count", String.valueOf(franchises.size()))
+                        .bodyValue(franchises));
     }
     
     public Mono<ServerResponse> updateFranchiseName(ServerRequest request) {

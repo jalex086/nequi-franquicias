@@ -11,8 +11,6 @@ local-up: ## Iniciar ambiente local con LocalStack
 	docker-compose up -d localstack
 	@echo "⏳ Esperando LocalStack..."
 	sleep 10
-	@echo "📋 Creando tablas DynamoDB..."
-	./scripts/localstack/01-create-tables.sh
 	@echo "✅ Ambiente local listo!"
 
 local-down: ## Detener ambiente local

@@ -24,6 +24,11 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class ProductHandler {
     
+    private static final String ID_PATH_VARIABLE = "id";
+    private static final String FRANCHISE_ID_PATH_VARIABLE = "franchiseId";
+    private static final String BRANCH_ID_PATH_VARIABLE = "branchId";
+    private static final String BRANCH_NOT_FOUND_MESSAGE = "Sucursal no encontrada";
+    
     private final CreateProductUseCase createProductUseCase;
     private final GetProductsByBranchUseCase getProductsByBranchUseCase;
     private final DeleteProductUseCase deleteProductUseCase;
@@ -34,8 +39,8 @@ public class ProductHandler {
     private final BranchRepository branchRepository;
     
     public Mono<ServerResponse> createProduct(ServerRequest request) {
-        String franchiseId = request.pathVariable("franchiseId");
-        String branchId = request.pathVariable("branchId");
+        String franchiseId = request.pathVariable(FRANCHISE_ID_PATH_VARIABLE);
+        String branchId = request.pathVariable(BRANCH_ID_PATH_VARIABLE);
         return request.bodyToMono(CreateProductRequest.class)
                 .flatMap(req -> createProductUseCase.execute(franchiseId, branchId, req.getName(), req.getStock()))
                 .map(this::toResponse)
@@ -43,7 +48,7 @@ public class ProductHandler {
     }
     
     public Mono<ServerResponse> getProductsByBranch(ServerRequest request) {
-        String branchId = request.pathVariable("branchId");
+        String branchId = request.pathVariable(BRANCH_ID_PATH_VARIABLE);
         return getProductsByBranchUseCase.execute(branchId)
                 .map(this::toResponse)
                 .collectList()
@@ -51,13 +56,13 @@ public class ProductHandler {
     }
     
     public Mono<ServerResponse> deleteProduct(ServerRequest request) {
-        String id = request.pathVariable("id");
+        String id = request.pathVariable(ID_PATH_VARIABLE);
         return deleteProductUseCase.execute(id)
                 .then(ServerResponse.noContent().build());
     }
     
     public Mono<ServerResponse> getTopStockProducts(ServerRequest request) {
-        String franchiseId = request.pathVariable("franchiseId");
+        String franchiseId = request.pathVariable(FRANCHISE_ID_PATH_VARIABLE);
         return getTopStockProductsUseCase.execute(franchiseId)
                 .map(this::toResponse)
                 .collectList()
@@ -65,19 +70,19 @@ public class ProductHandler {
     }
     
     public Mono<ServerResponse> getTopStockProductByBranch(ServerRequest request) {
-        String franchiseId = request.pathVariable("franchiseId");
+        String franchiseId = request.pathVariable(FRANCHISE_ID_PATH_VARIABLE);
         return getTopStockProductByBranchUseCase.execute(franchiseId)
                 .flatMap(product -> 
                     branchRepository.findById(product.getBranchId())
                         .map(branch -> toResponseWithBranch(product, branch.getName()))
-                        .defaultIfEmpty(toResponseWithBranch(product, "Sucursal no encontrada"))
+                        .defaultIfEmpty(toResponseWithBranch(product, BRANCH_NOT_FOUND_MESSAGE))
                 )
                 .collectList()
                 .flatMap(products -> ServerResponse.ok().bodyValue(products));
     }
     
     public Mono<ServerResponse> updateProductName(ServerRequest request) {
-        String id = request.pathVariable("id");
+        String id = request.pathVariable(ID_PATH_VARIABLE);
         return request.bodyToMono(UpdateProductNameRequest.class)
                 .flatMap(req -> updateProductNameUseCase.execute(id, req.getName()))
                 .map(this::toResponse)
@@ -85,7 +90,7 @@ public class ProductHandler {
     }
     
     public Mono<ServerResponse> updateProductStock(ServerRequest request) {
-        String id = request.pathVariable("id");
+        String id = request.pathVariable(ID_PATH_VARIABLE);
         return request.bodyToMono(UpdateProductStockRequest.class)
                 .flatMap(req -> updateProductStockUseCase.execute(id, req.getStock()))
                 .map(this::toResponse)

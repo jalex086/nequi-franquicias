@@ -75,15 +75,15 @@ jobs:
         run: |
           # Forzar nuevo deployment del servicio ECS
           aws ecs update-service \
-            --cluster business-franquicias-cluster-dev \
-            --service business-franquicias-service-dev \
+            --cluster business-cluster-dev \
+            --service business-franquicias-dev \
             --force-new-deployment \
             --region ${{ env.AWS_REGION }}
           
           # Esperar que el deployment se complete
           aws ecs wait services-stable \
-            --cluster business-franquicias-cluster-dev \
-            --services business-franquicias-service-dev \
+            --cluster business-cluster-dev \
+            --services business-franquicias-dev \
             --region ${{ env.AWS_REGION }}
           
           echo "✅ Deployment to DEV completed successfully"

@@ -262,13 +262,14 @@ resource "aws_vpc_endpoint" "logs" {
   })
 }
 
-# Security Group para VPC Endpoint
+# Security Group para VPC Endpoint (compartido entre ambientes)
 resource "aws_security_group" "vpc_endpoint" {
   name_prefix = "${local.service_name}-vpc-endpoint-"
   vpc_id      = data.aws_vpc.main.id
 
+  # Permitir acceso desde el ambiente actual
   ingress {
-    description     = "HTTPS from ECS"
+    description     = "HTTPS from ECS ${var.env}"
     from_port       = 443
     to_port         = 443
     protocol        = "tcp"
@@ -288,7 +289,39 @@ resource "aws_security_group" "vpc_endpoint" {
 
   lifecycle {
     create_before_destroy = true
+    # Ignorar cambios en ingress porque otros ambientes pueden agregar reglas
+    ignore_changes = [ingress]
   }
+}
+
+# Data sources para obtener security groups de ECS de otros ambientes
+data "aws_security_groups" "ecs_other_envs" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.main.id]
+  }
+
+  filter {
+    name   = "tag:Name"
+    values = [
+      "business-franquicias-dev-ecs",
+      "business-franquicias-qa-ecs",
+      "business-franquicias-pdn-ecs"
+    ]
+  }
+}
+
+# Reglas de ingress adicionales para permitir acceso desde todos los ambientes
+resource "aws_security_group_rule" "vpc_endpoint_from_other_envs" {
+  for_each = toset(data.aws_security_groups.ecs_other_envs.ids)
+
+  type                     = "ingress"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  source_security_group_id = each.value
+  security_group_id        = aws_security_group.vpc_endpoint.id
+  description              = "HTTPS from ECS (multi-env)"
 }
 
 # CloudWatch Log Groups - uniformes

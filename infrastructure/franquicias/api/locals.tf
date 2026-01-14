@@ -1,35 +1,39 @@
-# Variables locales para el módulo específico de franquicias
-# Lógica de naming y configuración por ambiente
+# Variables locales uniformes para todos los ambientes
+# Configuración consistente sin diferencias innecesarias
 
 locals {
-  # Naming convention
+  # Naming convention uniforme
   service_name      = "${var.capacity}-${var.functionality}-${var.env}"
   cluster_name      = "${var.capacity}-cluster-${var.env}"
   task_family       = "${var.capacity}-${var.functionality}-${var.env}"
   container_name    = "${var.functionality}-app"
   alb_name          = "${var.capacity}-${var.functionality}-alb-${var.env}"
   target_group_name = "${var.capacity}-${var.functionality}-tg-${var.env}"
-  ecr_name          = "${var.capacity}-${var.functionality}"
 
-  # Container configuration
-  container_image = "${aws_ecr_repository.app.repository_url}:latest"
+  # Container configuration uniforme
+  container_image = "${var.container_image}:latest-${var.env}"
 
-  # Resource sizing by environment
-  cpu = var.env == "prod" ? 1024 : 512
-  memory = var.env == "prod" ? 2048 : 1024
+  # Resource sizing uniforme (simplificado)
+  cpu    = 1024
+  memory = 2048
 
-  # Scaling configuration
-  desired_count = var.env == "prod" ? 2 : 1
-  min_capacity  = var.env == "prod" ? 2 : 1
-  max_capacity  = var.env == "prod" ? 10 : 3
+  # Scaling configuration por ambiente (solo lo necesario)
+  desired_count = var.env == "pdn" ? 2 : 1
 
-  # Common tags
+  # Log retention por ambiente
+  log_retention_days = var.env == "pdn" ? 30 : 7
+
+  # Deletion protection solo en producción
+  enable_deletion_protection = var.env == "pdn" ? true : false
+
+  # Common tags uniformes
   common_tags = {
     Environment   = var.env
     Project      = var.project
     Owner        = var.owner
     Capacity     = var.capacity
     Functionality = var.functionality
+    Module       = "franquicias-api"
     ManagedBy    = "terraform"
   }
 }

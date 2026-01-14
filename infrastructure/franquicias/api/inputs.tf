@@ -1,5 +1,17 @@
 # Variables de entrada para el módulo específico de franquicias
 
+variable "container_image" {
+  description = "Docker image for the application"
+  type        = string
+  default     = "jalex86/nequi-franquicias"
+}
+
+variable "aws_region" {
+  description = "AWS region"
+  type        = string
+  default     = "us-east-1"
+}
+
 variable "env" {
   description = "Environment (dev, qa, prod)"
   type        = string

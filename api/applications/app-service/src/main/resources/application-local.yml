@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: "FranquiciasAPI"
+
+aws:
+  region: us-east-1
+  endpoint: ${AWS_ENDPOINT:http://localhost:4566}
+  dynamodb:
+    tables:
+      franchises: business-franquicias-local
+      branches: business-sucursales-local
+      products: business-productos-local
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,prometheus,info"
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    co.com.bancolombia: DEBUG
+    software.amazon.awssdk: DEBUG
+    software.amazon.awssdk.request: DEBUG

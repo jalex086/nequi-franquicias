@@ -1,5 +1,5 @@
-# Configuración específica del microservicio Franquicias
-# Referencia recursos transversales y crea configuración específica
+# Configuración uniforme para todos los ambientes
+# Elimina diferencias innecesarias entre dev/qa/pdn
 
 # Data sources para referenciar infraestructura transversal
 data "aws_dynamodb_table" "franquicias" {
@@ -18,10 +18,14 @@ data "aws_vpc" "main" {
   default = true
 }
 
-data "aws_subnets" "private" {
+data "aws_subnets" "public" {
   filter {
     name   = "vpc-id"
     values = [data.aws_vpc.main.id]
+  }
+  filter {
+    name   = "map-public-ip-on-launch"
+    values = ["true"]
   }
 }
 
@@ -40,10 +44,10 @@ resource "aws_ecs_cluster" "main" {
     }
   }
 
-  tags = var.tags
+  tags = local.common_tags
 }
 
-# ECS Service
+# ECS Service - configuración uniforme para todos los ambientes
 resource "aws_ecs_service" "app" {
   name            = local.service_name
   cluster         = aws_ecs_cluster.main.id
@@ -52,9 +56,9 @@ resource "aws_ecs_service" "app" {
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets          = data.aws_subnets.private.ids
+    subnets          = data.aws_subnets.public.ids
     security_groups  = [aws_security_group.ecs_service.id]
-    assign_public_ip = false
+    assign_public_ip = true
   }
 
   load_balancer {
@@ -63,17 +67,12 @@ resource "aws_ecs_service" "app" {
     container_port   = 8080
   }
 
-  deployment_configuration {
-    maximum_percent         = 200
-    minimum_healthy_percent = 100
-  }
-
   depends_on = [aws_lb_listener.app]
 
-  tags = var.tags
+  tags = local.common_tags
 }
 
-# ECS Task Definition
+# ECS Task Definition - uniforme para todos los ambientes
 resource "aws_ecs_task_definition" "app" {
   family                   = local.task_family
   network_mode             = "awsvpc"
@@ -106,16 +105,8 @@ resource "aws_ecs_task_definition" "app" {
           value = data.aws_region.current.name
         },
         {
-          name  = "DYNAMODB_FRANQUICIAS_TABLE"
-          value = data.aws_dynamodb_table.franquicias.name
-        },
-        {
-          name  = "DYNAMODB_SUCURSALES_TABLE"
-          value = data.aws_dynamodb_table.sucursales.name
-        },
-        {
-          name  = "DYNAMODB_PRODUCTOS_TABLE"
-          value = data.aws_dynamodb_table.productos.name
+          name  = "ENVIRONMENT"
+          value = var.env
         }
       ]
 
@@ -129,29 +120,29 @@ resource "aws_ecs_task_definition" "app" {
       }
 
       healthCheck = {
-        command     = ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
-        interval    = 30
-        timeout     = 5
-        retries     = 3
-        startPeriod = 60
+        command     = ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1"]
+        interval    = 60
+        timeout     = 10
+        retries     = 5
+        startPeriod = 120
       }
     }
   ])
 
-  tags = var.tags
+  tags = local.common_tags
 }
 
-# Application Load Balancer
+# Application Load Balancer - uniforme
 resource "aws_lb" "app" {
   name               = local.alb_name
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb.id]
-  subnets            = data.aws_subnets.private.ids
+  subnets            = data.aws_subnets.public.ids
 
-  enable_deletion_protection = var.env == "prod" ? true : false
+  enable_deletion_protection = local.enable_deletion_protection
 
-  tags = var.tags
+  tags = local.common_tags
 }
 
 resource "aws_lb_target_group" "app" {
@@ -164,16 +155,16 @@ resource "aws_lb_target_group" "app" {
   health_check {
     enabled             = true
     healthy_threshold   = 2
-    interval            = 30
+    interval            = 60
     matcher             = "200"
     path                = "/actuator/health"
     port                = "traffic-port"
     protocol            = "HTTP"
-    timeout             = 5
-    unhealthy_threshold = 2
+    timeout             = 10
+    unhealthy_threshold = 3
   }
 
-  tags = var.tags
+  tags = local.common_tags
 }
 
 resource "aws_lb_listener" "app" {
@@ -185,11 +176,13 @@ resource "aws_lb_listener" "app" {
     type             = "forward"
     target_group_arn = aws_lb_target_group.app.arn
   }
+
+  tags_all = local.common_tags
 }
 
-# Security Groups
+# Security Groups - uniformes
 resource "aws_security_group" "alb" {
-  name_prefix = "${local.service_name}-alb"
+  name_prefix = "${local.service_name}-alb-"
   vpc_id      = data.aws_vpc.main.id
 
   ingress {
@@ -207,13 +200,17 @@ resource "aws_security_group" "alb" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = merge(var.tags, {
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  tags = merge(local.common_tags, {
     Name = "${local.service_name}-alb"
   })
 }
 
 resource "aws_security_group" "ecs_service" {
-  name_prefix = "${local.service_name}-ecs"
+  name_prefix = "${local.service_name}-ecs-"
   vpc_id      = data.aws_vpc.main.id
 
   ingress {
@@ -231,39 +228,118 @@ resource "aws_security_group" "ecs_service" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = merge(var.tags, {
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  tags = merge(local.common_tags, {
     Name = "${local.service_name}-ecs"
   })
 }
 
-# CloudWatch Log Groups
+# VPC Endpoint para CloudWatch Logs
+resource "aws_vpc_endpoint" "logs" {
+  vpc_id              = data.aws_vpc.main.id
+  service_name        = "com.amazonaws.${data.aws_region.current.name}.logs"
+  vpc_endpoint_type   = "Interface"
+  subnet_ids          = data.aws_subnets.public.ids
+  security_group_ids  = [aws_security_group.vpc_endpoint.id]
+  private_dns_enabled = true
+
+  policy = jsonencode({
+    Statement = [
+      {
+        Action    = "*"
+        Effect    = "Allow"
+        Principal = "*"
+        Resource  = "*"
+      }
+    ]
+  })
+
+  tags = merge(local.common_tags, {
+    Name = "${local.service_name}-logs-endpoint"
+  })
+}
+
+# Security Group para VPC Endpoint (compartido entre ambientes)
+resource "aws_security_group" "vpc_endpoint" {
+  name_prefix = "${local.service_name}-vpc-endpoint-"
+  vpc_id      = data.aws_vpc.main.id
+
+  # Permitir acceso desde el ambiente actual
+  ingress {
+    description     = "HTTPS from ECS ${var.env}"
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    security_groups = [aws_security_group.ecs_service.id]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${local.service_name}-vpc-endpoint-sg"
+  })
+
+  lifecycle {
+    create_before_destroy = true
+    # Ignorar cambios en ingress porque otros ambientes pueden agregar reglas
+    ignore_changes = [ingress]
+  }
+}
+
+# Data sources para obtener security groups de ECS de otros ambientes
+data "aws_security_groups" "ecs_other_envs" {
+  filter {
+    name   = "vpc-id"
+    values = [data.aws_vpc.main.id]
+  }
+
+  filter {
+    name   = "tag:Name"
+    values = [
+      "business-franquicias-dev-ecs",
+      "business-franquicias-qa-ecs",
+      "business-franquicias-pdn-ecs"
+    ]
+  }
+}
+
+# Reglas de ingress adicionales para permitir acceso desde todos los ambientes
+resource "aws_security_group_rule" "vpc_endpoint_from_other_envs" {
+  for_each = toset(data.aws_security_groups.ecs_other_envs.ids)
+
+  type                     = "ingress"
+  from_port                = 443
+  to_port                  = 443
+  protocol                 = "tcp"
+  source_security_group_id = each.value
+  security_group_id        = aws_security_group.vpc_endpoint.id
+  description              = "HTTPS from ECS (multi-env)"
+}
+
+# CloudWatch Log Groups - uniformes
 resource "aws_cloudwatch_log_group" "app" {
   name              = "/ecs/${local.service_name}"
-  retention_in_days = var.env == "prod" ? 30 : 7
+  retention_in_days = local.log_retention_days
 
-  tags = var.tags
+  tags = local.common_tags
 }
 
 resource "aws_cloudwatch_log_group" "ecs_cluster" {
   name              = "/aws/ecs/cluster/${local.cluster_name}"
-  retention_in_days = var.env == "prod" ? 30 : 7
+  retention_in_days = local.log_retention_days
 
-  tags = var.tags
+  tags = local.common_tags
 }
 
-# ECR Repository
-resource "aws_ecr_repository" "app" {
-  name                 = local.ecr_name
-  image_tag_mutability = "MUTABLE"
-
-  image_scanning_configuration {
-    scan_on_push = true
-  }
-
-  tags = var.tags
-}
-
-# IAM Roles
+# IAM Roles - uniformes
 resource "aws_iam_role" "ecs_task_execution" {
   name = "${local.service_name}-ecs-task-execution"
 
@@ -280,7 +356,7 @@ resource "aws_iam_role" "ecs_task_execution" {
     ]
   })
 
-  tags = var.tags
+  tags = local.common_tags
 }
 
 resource "aws_iam_role_policy_attachment" "ecs_task_execution" {
@@ -304,10 +380,10 @@ resource "aws_iam_role" "ecs_task" {
     ]
   })
 
-  tags = var.tags
+  tags = local.common_tags
 }
 
-# IAM Policy para acceso a DynamoDB
+# IAM Policy para acceso a DynamoDB - uniforme
 resource "aws_iam_role_policy" "ecs_task_dynamodb" {
   name = "${local.service_name}-dynamodb"
   role = aws_iam_role.ecs_task.id

@@ -22,7 +22,6 @@
 
 # Docker
 **/Dockerfile.tmp
-docs/
 
 # Cache de build
 **/build-cache/

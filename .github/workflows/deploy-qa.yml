@@ -79,9 +79,23 @@ jobs:
           docker tag ${{ secrets.DOCKERHUB_USERNAME }}/nequi-franquicias:$IMAGE_TAG ${{ secrets.DOCKERHUB_USERNAME }}/nequi-franquicias:latest-qa
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/nequi-franquicias:latest-qa
 
-      - name: Update ECS service
+      - name: Deploy to ECS QA
         run: |
-          aws ecs update-service --cluster business-cluster-qa --service business-franquicias-qa --force-new-deployment --region ${{ env.AWS_REGION }}
+          # Obtener task definition actual
+          TASK_DEF=$(aws ecs describe-task-definition --task-definition business-franquicias-qa --region ${{ env.AWS_REGION }})
+          
+          # Crear nueva task definition con la nueva imagen
+          NEW_TASK_DEF=$(echo $TASK_DEF | jq --arg IMAGE "${{ secrets.DOCKERHUB_USERNAME }}/nequi-franquicias:$IMAGE_TAG" '.taskDefinition | .containerDefinitions[0].image = $IMAGE | del(.taskDefinitionArn) | del(.revision) | del(.status) | del(.requiresAttributes) | del(.placementConstraints) | del(.compatibilities) | del(.registeredAt) | del(.registeredBy)')
+          
+          # Registrar nueva task definition
+          aws ecs register-task-definition --region ${{ env.AWS_REGION }} --cli-input-json "$NEW_TASK_DEF"
+          
+          # Actualizar servicio con nueva task definition
+          aws ecs update-service \
+            --cluster business-cluster-qa \
+            --service business-franquicias-qa \
+            --task-definition business-franquicias-qa \
+            --region ${{ env.AWS_REGION }}
           
           # Esperar que el deployment se complete (20 minutos)
           AWS_MAX_ATTEMPTS=80 aws ecs wait services-stable \
